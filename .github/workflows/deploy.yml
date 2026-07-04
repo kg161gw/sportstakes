@@ -22,10 +22,10 @@ jobs:
         env:
           VITE_API_KEY: ${{ github.ref == 'refs/heads/main' && secrets.VITE_API_KEY_PROD || secrets.VITE_API_KEY_STAGING }}
 
-      - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ github.ref == 'refs/heads/main' && secrets.FIREBASE_SERVICE_ACCOUNT_PROD || secrets.FIREBASE_SERVICE_ACCOUNT_STAGING }}
-          projectId: ${{ github.ref == 'refs/heads/main' && 'sportstakes-prod' || 'sportstakes-staging' }}
-          channelId: live
+      - name: Deploy to staging
+        if: github.ref == 'refs/heads/develop'
+        run: npx firebase-tools deploy --only hosting --project sportstakes-staging --token ${{ secrets.FIREBASE_TOKEN }}
+
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/main'
+        run: npx firebase-tools deploy --only hosting --project sportstakes-prod --token ${{ secrets.FIREBASE_TOKEN }}
