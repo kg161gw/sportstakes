@@ -3,14 +3,12 @@ import PageWrapper from '../components/shared/PageWrapper'
 import SlidingTabs from '../components/shared/SlidingTabs'
 import { useMatches } from '../hooks/useMatches'
 import { useStandings } from '../hooks/useStandings'
+import { useScorers } from '../hooks/useTeams'
 import { useUIStore } from '../store/uiStore'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import TeamPanel from '../components/teams/TeamPanel'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
-import { useTopScorers, useTopAssists } from '../hooks/useApiFootball'
-import { afAvailable } from '../api/apiFootballApi'
-import type { Match, StandingGroup } from '../api/footballApi'
-import type { AfTopPlayer } from '../api/apiFootballApi'
+import type { Match, StandingGroup, Scorer } from '../api/footballApi'
 
 // ── Group Standings ──────────────────────────────────────────────────
 function GroupTable({ group }: { group: StandingGroup }) {
@@ -263,81 +261,62 @@ function ScheduleView({ matches }: { matches: Match[] }) {
 
 // ── Stats leaderboard ─────────────────────────────────────────────────
 
-function PlayerLeaderRow({
-  rank,
-  entry,
-  statValue,
-  statLabel,
-}: {
+function ScorerRow({ rank, scorer, statKey }: {
   rank: number
-  entry: AfTopPlayer
-  statValue: number | null
-  statLabel: string
+  scorer: Scorer
+  statKey: 'goals' | 'assists'
 }) {
-  const { player } = entry
-  const team = entry.statistics[0]?.team
+  const value = statKey === 'goals' ? scorer.goals : scorer.assists
+  if (!value) return null
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
       <span className="text-white/30 font-heading w-5 text-right text-sm flex-shrink-0">{rank}</span>
-      {player.photo ? (
-        <img
-          src={player.photo}
-          alt={player.name}
-          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-        />
-      ) : (
-        <div className="w-8 h-8 rounded-full bg-pitch-light flex items-center justify-center flex-shrink-0">
-          <span className="text-white/30 text-xs font-heading">{player.name.charAt(0)}</span>
-        </div>
-      )}
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-medium truncate">{player.name}</p>
-        {team && (
-          <div className="flex items-center gap-1">
-            {team.logo && (
-              <img src={team.logo} alt={team.name} className="w-3 h-3 object-contain" />
-            )}
-            <p className="text-white/40 text-xs truncate">{team.name}</p>
-          </div>
+      <div className="w-8 h-8 rounded-full bg-pitch-light flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {scorer.team.crest ? (
+          <img src={scorer.team.crest} alt={scorer.team.name} className="w-5 h-5 object-contain" />
+        ) : (
+          <span className="text-white/30 text-xs font-heading">{scorer.player.name.charAt(0)}</span>
         )}
       </div>
-      <div className="text-right flex-shrink-0">
-        <span className="font-heading text-gold text-lg">{statValue ?? '-'}</span>
-        <p className="text-white/30 text-[10px]">{statLabel}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-medium truncate">{scorer.player.name}</p>
+        <p className="text-white/40 text-xs truncate">{scorer.team.shortName || scorer.team.name}</p>
       </div>
+      <div className="text-right flex-shrink-0">
+        <span className="font-heading text-gold text-xl">{value}</span>
+        <p className="text-white/30 text-[10px]">{statKey}</p>
+      </div>
+      {statKey === 'goals' && scorer.penalties !== null && scorer.penalties > 0 && (
+        <span className="text-white/20 text-[10px] ml-1">({scorer.penalties}P)</span>
+      )}
     </div>
   )
 }
 
 function StatsView() {
-  const { data: scorers = [], isLoading: scorersLoading } = useTopScorers()
-  const { data: assisters = [], isLoading: assistsLoading } = useTopAssists()
-  const [statTab, setStatTab] = useState<'scorers' | 'assists'>('scorers')
+  const { data: allScorers = [], isLoading } = useScorers()
+  const [statTab, setStatTab] = useState<'goals' | 'assists'>('goals')
 
-  if (!afAvailable) {
-    return (
-      <div className="text-center py-12 text-white/30 text-sm">
-        Add VITE_API_FOOTBALL_KEY for stats leaderboards
-      </div>
+  const sorted = [...allScorers]
+    .filter(s => statTab === 'goals' ? s.goals > 0 : (s.assists ?? 0) > 0)
+    .sort((a, b) =>
+      statTab === 'goals'
+        ? b.goals - a.goals
+        : (b.assists ?? 0) - (a.assists ?? 0)
     )
-  }
-
-  const isLoading = statTab === 'scorers' ? scorersLoading : assistsLoading
-  const players = statTab === 'scorers' ? scorers : assisters
 
   return (
     <div>
       <div className="flex gap-2 mb-4">
-        {(['scorers', 'assists'] as const).map(t => (
+        {(['goals', 'assists'] as const).map(t => (
           <button
             key={t}
             onClick={() => setStatTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-4 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
               statTab === t ? 'bg-gold text-black' : 'bg-pitch-mid text-white/50 hover:text-white'
             }`}
           >
-            {t === 'scorers' ? 'Top Scorers' : 'Top Assists'}
+            {t === 'goals' ? 'Top Scorers' : 'Top Assists'}
           </button>
         ))}
       </div>
@@ -348,23 +327,19 @@ function StatsView() {
             <div key={i} className="skeleton rounded-xl h-14" />
           ))}
         </div>
-      ) : players.length === 0 ? (
+      ) : sorted.length === 0 ? (
         <div className="text-center py-12 text-white/30">
-          Stats not yet available
+          <p className="text-3xl mb-2">⚽</p>
+          <p>No stats yet — check back after the first matches</p>
         </div>
       ) : (
         <div className="bg-pitch-mid rounded-xl overflow-hidden">
-          {players.slice(0, 20).map((p, i) => (
-            <PlayerLeaderRow
-              key={p.player.id}
-              rank={i + 1}
-              entry={p}
-              statValue={p.statistics[0]?.goals[statTab === 'scorers' ? 'total' : 'assists'] ?? null}
-              statLabel={statTab === 'scorers' ? 'goals' : 'assists'}
-            />
+          {sorted.slice(0, 20).map((s, i) => (
+            <ScorerRow key={s.player.id} rank={i + 1} scorer={s} statKey={statTab} />
           ))}
         </div>
       )}
+      <p className="text-white/20 text-[10px] text-center mt-3">Source: football-data.org · WC 2026</p>
     </div>
   )
 }
