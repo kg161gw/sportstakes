@@ -8,6 +8,9 @@ import { useSquadEnrichment, usePlayerEnrichment } from '../hooks/usePlayerEnric
 import MatchCard from '../components/fixtures/MatchCard'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import { SkeletonCard, SkeletonText } from '../components/shared/LoadingSkeleton'
+import Spinner from '../components/shared/Spinner'
+import { useApiPlayerStats } from '../hooks/useApiFootball'
+import { afAvailable } from '../api/apiFootballApi'
 import type { Match, Player } from '../api/footballApi'
 import type { TsdbPlayer } from '../api/theSportsDbApi'
 
@@ -36,6 +39,8 @@ function PlayerPanel({
   onClose: () => void
 }) {
   const { data: enriched, isLoading } = usePlayerEnrichment(player.name)
+  const { data: playerStats, isLoading: statsLoading } = useApiPlayerStats(player.name)
+  const stat = playerStats?.[0]?.statistics?.[0]
 
   return (
     <motion.div
@@ -62,7 +67,11 @@ function PlayerPanel({
         {/* photo + name header */}
         <div className="flex items-start gap-4 px-5 py-3">
           <div className="w-24 h-28 rounded-xl overflow-hidden bg-pitch-light flex-shrink-0">
-            {isLoading ? (
+            {isLoading && statsLoading ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <Spinner />
+              </div>
+            ) : isLoading ? (
               <div className="w-full h-full animate-pulse bg-white/10" />
             ) : enriched?.strThumb ? (
               <img
@@ -121,6 +130,41 @@ function PlayerPanel({
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* API-Football season stats */}
+        {afAvailable && stat && (
+          <div className="px-5 mt-3">
+            <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">Season Stats</p>
+            <div className="grid grid-cols-3 gap-2">
+              {(() => {
+                const ratingRaw = stat.games.rating ? parseFloat(stat.games.rating) : null
+                const ratingColor = ratingRaw !== null
+                  ? ratingRaw >= 7.5 ? 'text-gold' : ratingRaw >= 6.5 ? 'text-white' : 'text-white/40'
+                  : 'text-white'
+
+                const items: Array<{ value: string | number | null; label: string; color?: string }> = [
+                  { value: ratingRaw !== null ? ratingRaw.toFixed(1) : null, label: 'Rating', color: ratingColor },
+                  { value: stat.games.minutes, label: 'Mins' },
+                  { value: stat.goals.total, label: 'Goals' },
+                  { value: stat.goals.assists, label: 'Assists' },
+                  { value: stat.shots.on, label: 'On Target' },
+                  { value: stat.passes.accuracy, label: 'Pass Acc' },
+                  { value: stat.tackles.total, label: 'Tackles' },
+                  { value: stat.cards.yellow > 0 ? stat.cards.yellow : null, label: 'Yellows' },
+                ]
+
+                return items
+                  .filter(item => item.value !== null && item.value !== 0 && item.value !== '')
+                  .map(item => (
+                    <div key={item.label} className="bg-pitch-light rounded-lg p-2 text-center">
+                      <p className={`font-heading text-base ${item.color ?? 'text-white'}`}>{item.value}</p>
+                      <p className="text-white/40 text-[10px]">{item.label}</p>
+                    </div>
+                  ))
+              })()}
+            </div>
           </div>
         )}
 

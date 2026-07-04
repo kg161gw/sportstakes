@@ -17,6 +17,14 @@ export default defineConfig(({ mode }) => {
             'X-Auth-Token': env.VITE_API_KEY ?? '',
           },
         },
+        '/api/apifootball': {
+          target: 'https://v3.football-api.com',
+          changeOrigin: true,
+          rewrite: path => path.replace(/^\/api\/apifootball/, ''),
+          headers: {
+            'x-apisports-key': env.VITE_API_FOOTBALL_KEY ?? '',
+          },
+        },
       },
     },
   }

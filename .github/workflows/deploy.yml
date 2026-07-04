@@ -26,10 +26,13 @@ jobs:
         run: npm run build
         env:
           VITE_API_KEY: ${{ secrets.VITE_API_KEY_STAGING }}
+          VITE_API_FOOTBALL_KEY: ${{ secrets.VITE_API_FOOTBALL_KEY }}
 
       - name: Build (production) — no API key in bundle, Cloud Function proxy used
         if: github.ref == 'refs/heads/main'
         run: npm run build
+        env:
+          VITE_API_FOOTBALL_KEY: ${{ secrets.VITE_API_FOOTBALL_KEY }}
 
       - name: Deploy staging
         if: github.ref == 'refs/heads/develop'
