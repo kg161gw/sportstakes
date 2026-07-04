@@ -1,120 +1,22 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Match } from '../../api/footballApi'
-import type { AfTeamStats, AfEvent, AfLineup } from '../../api/apiFootballApi'
-import { afAvailable } from '../../api/apiFootballApi'
-import {
-  useFixtureId,
-  useFixtureStats,
-  useFixtureEvents,
-  useFixtureLineups,
-  nameMatch,
-} from '../../hooks/useApiFootball'
 import { useMatchDetail } from '../../hooks/useMatches'
 import Spinner from '../shared/Spinner'
 import MatchCard from './MatchCard'
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-function getStat(teamStats: AfTeamStats, type: string): string | number | null {
-  return teamStats.statistics.find(s => s.type === type)?.value ?? null
-}
-
-function parseNum(v: string | number | null): number | null {
-  if (v === null || v === undefined) return null
-  if (typeof v === 'number') return v
-  const n = parseFloat(v)
-  return isNaN(n) ? null : n
-}
-
 function lastNameOf(full: string): string {
   return full.split(' ').pop() ?? full
-}
-
-// ── Card chip ─────────────────────────────────────────────────────────
-
-function CardChip({ type }: { type: string }) {
-  if (type === 'Red Card') return <span className="inline-block w-3 h-4 rounded-[2px] bg-red-500 flex-shrink-0" />
-  if (type === 'Yellow-Red Card') return <span className="inline-block w-3 h-4 rounded-[2px] bg-orange-400 flex-shrink-0" />
-  return <span className="inline-block w-3 h-4 rounded-[2px] bg-yellow-400 flex-shrink-0" />
-}
-
-// ── Lineups ────────────────────────────────────────────────────────────
-
-function LineupSide({
-  lineup,
-  isAway,
-}: {
-  lineup: AfLineup
-  isAway: boolean
-}) {
-  const starters = lineup.startXI.map(e => e.player)
-  const subs = lineup.substitutes.map(e => e.player)
-
-  return (
-    <div className={`flex-1 min-w-0 ${isAway ? 'text-right' : ''}`}>
-      <div className={`flex items-center gap-1 mb-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
-        <img
-          src={lineup.team.logo}
-          alt={lineup.team.name}
-          className="w-4 h-4 object-contain"
-          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
-        />
-        <span className="text-white/60 text-xs font-heading truncate">{lineup.formation ?? ''}</span>
-      </div>
-      {starters.map(p => (
-        <p key={p.id} className="text-white/70 text-[11px] truncate leading-5">
-          <span className="text-white/30 mr-1">{p.number}</span>
-          {lastNameOf(p.name)}
-        </p>
-      ))}
-      {subs.length > 0 && (
-        <>
-          <p className="text-white/20 text-[10px] mt-1.5 mb-0.5 uppercase tracking-wider">Subs</p>
-          {subs.map(p => (
-            <p key={p.id} className="text-white/30 text-[11px] truncate leading-4">
-              <span className="mr-1">{p.number}</span>
-              {lastNameOf(p.name)}
-            </p>
-          ))}
-        </>
-      )}
-    </div>
-  )
-}
-
-function LineupsPanel({ lineups, homeTeamName }: { lineups: AfLineup[]; homeTeamName: string }) {
-  if (lineups.length < 2) return null
-  const home = lineups.find(l => nameMatch(l.team.name, homeTeamName))
-  const away = lineups.find(l => !nameMatch(l.team.name, homeTeamName))
-  if (!home || !away) return null
-
-  return (
-    <div className="px-3 pb-1">
-      <p className="text-white/30 text-[10px] uppercase tracking-wider text-center mb-2">Lineups</p>
-      <div className="flex gap-3">
-        <LineupSide lineup={home} isAway={false} />
-        <div className="w-px bg-white/10 flex-shrink-0" />
-        <LineupSide lineup={away} isAway={true} />
-      </div>
-    </div>
-  )
 }
 
 // ── Match Detail Panel ────────────────────────────────────────────────
 
 function MatchDetailPanel({ match }: { match: Match }) {
-  const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED'
-  const fixtureId = useFixtureId(match.homeTeam.name, match.awayTeam.name, match.utcDate)
-  const { data: statsData = [], isLoading: statsLoading } = useFixtureStats(fixtureId, isLive)
-  const { data: events = [], isLoading: eventsLoading } = useFixtureEvents(fixtureId, isLive)
-  const { data: lineups = [], isLoading: lineupsLoading } = useFixtureLineups(fixtureId)
-  const { data: fdDetail } = useMatchDetail(match.id)
+  const { data: fd, isLoading } = useMatchDetail(match.id)
 
-  const [showLineups, setShowLineups] = useState(false)
-
-  // Loading
-  if ((statsLoading || eventsLoading) && afAvailable) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-6">
         <Spinner />
@@ -122,131 +24,133 @@ function MatchDetailPanel({ match }: { match: Match }) {
     )
   }
 
-  // No API key
-  if (!afAvailable) {
-    return (
-      <div className="px-3 pb-3 text-white/30 text-xs text-center">
-        Add VITE_API_FOOTBALL_KEY for full stats
-      </div>
-    )
-  }
-
-  // No data after loading
-  if (statsData.length === 0 && events.length === 0 && lineups.length === 0) {
-    return (
-      <div className="px-3 pb-3 text-white/30 text-xs text-center">
-        Stats not yet available
-      </div>
-    )
-  }
-
-  const homeStats = statsData.find(t => nameMatch(t.team.name, match.homeTeam.name))
-  const awayStats = statsData.find(t => !nameMatch(t.team.name, match.homeTeam.name))
-
-  // Half-time from football-data.org
-  const htHome = fdDetail?.score.halfTime.home ?? null
-  const htAway = fdDetail?.score.halfTime.away ?? null
+  const htHome = fd?.score.halfTime.home ?? null
+  const htAway = fd?.score.halfTime.away ?? null
   const hasHT = htHome !== null && htAway !== null
 
-  // Sort events by elapsed time
-  const sortedEvents = [...events].sort((a, b) => a.time.elapsed - b.time.elapsed)
+  const goals = fd?.goals ?? []
+  const bookings = fd?.bookings ?? []
+  const subs = fd?.substitutions ?? []
 
-  const homeEvents = sortedEvents.filter(e => nameMatch(e.team.name, match.homeTeam.name))
-  const awayEvents = sortedEvents.filter(e => !nameMatch(e.team.name, match.homeTeam.name))
+  const hasEvents = goals.length > 0 || bookings.length > 0 || subs.length > 0
 
-  // Possession
-  const homePossRaw = homeStats ? getStat(homeStats, 'Ball Possession') : null
-  const awayPossRaw = awayStats ? getStat(awayStats, 'Ball Possession') : null
-  const homePossNum = parseNum(typeof homePossRaw === 'string' ? homePossRaw.replace('%', '') : homePossRaw)
-  const awayPossNum = parseNum(typeof awayPossRaw === 'string' ? awayPossRaw.replace('%', '') : awayPossRaw)
-  const hasPossession = homePossNum !== null && awayPossNum !== null
-
-  // Stat rows config
-  const statRows: Array<{ type: string; label: string }> = [
-    { type: 'Total Shots', label: 'Shots' },
-    { type: 'Shots on Goal', label: 'On Target' },
-    { type: 'Corner Kicks', label: 'Corners' },
-    { type: 'Fouls', label: 'Fouls' },
-    { type: 'Offsides', label: 'Offsides' },
-    { type: 'Goalkeeper Saves', label: 'Saves' },
-    { type: 'Passes %', label: 'Pass Acc.' },
-  ]
-
-  function renderEventSide(evs: AfEvent[], side: 'home' | 'away') {
-    return evs.map((e, i) => {
-      const minute = `${e.time.elapsed}${e.time.extra ? `+${e.time.extra}` : ''}'`
-      const isAway = side === 'away'
-
-      if (e.type === 'Goal') {
-        const isOG = e.detail === 'Own Goal'
-        const isPen = e.detail === 'Penalty'
-        const icon = isOG ? (
-          <span className="text-red-400 text-xs">⚽ OG</span>
-        ) : isPen ? (
-          <span className="text-gold text-xs">⚽ P</span>
-        ) : (
-          <span className="text-white/60 text-xs">⚽</span>
-        )
-        return (
-          <div key={i} className={`flex items-start gap-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
-            <span className={`text-white/30 text-xs w-8 flex-shrink-0 ${isAway ? 'text-left' : 'text-right'}`}>{minute}</span>
-            <div className={`flex-1 min-w-0 ${isAway ? 'text-right' : ''}`}>
-              {isAway ? (
-                <>
-                  <span className="text-white text-xs mr-1">{lastNameOf(e.player.name)}</span>
-                  {icon}
-                </>
-              ) : (
-                <>
-                  {icon}
-                  <span className="text-white text-xs ml-1">{lastNameOf(e.player.name)}</span>
-                </>
-              )}
-              {e.assist.name && (
-                <p className={`text-white/30 text-[10px] ${isAway ? 'pr-4' : 'pl-4'}`}>
-                  {lastNameOf(e.assist.name)}
-                </p>
-              )}
-            </div>
-          </div>
-        )
-      }
-
-      if (e.type === 'Card') {
-        return (
-          <div key={i} className={`flex items-center gap-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
-            <span className={`text-white/30 text-xs w-8 flex-shrink-0 ${isAway ? 'text-left' : 'text-right'}`}>{minute}</span>
-            <CardChip type={e.detail} />
-            <span className="text-white/60 text-xs truncate">{lastNameOf(e.player.name)}</span>
-          </div>
-        )
-      }
-
-      if (e.type === 'subst') {
-        return (
-          <div key={i} className={`flex items-center gap-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
-            <span className={`text-white/30 text-xs w-8 flex-shrink-0 ${isAway ? 'text-left' : 'text-right'}`}>{minute}</span>
-            <div className={`min-w-0 ${isAway ? 'text-right' : ''}`}>
-              <span className="text-emerald-400 text-[10px]">
-                {isAway ? `${lastNameOf(e.player.name)} ↑` : `↑ ${lastNameOf(e.player.name)}`}
-              </span>
-              <br />
-              {e.assist.name && (
-                <span className="text-white/30 text-[10px]">
-                  {isAway ? `${lastNameOf(e.assist.name)} ↓` : `↓ ${lastNameOf(e.assist.name)}`}
-                </span>
-              )}
-            </div>
-          </div>
-        )
-      }
-
-      return null
-    })
+  if (!hasEvents && !hasHT) {
+    return (
+      <div className="px-3 pb-3 text-white/30 text-xs text-center py-4">
+        Match events not yet available
+      </div>
+    )
   }
 
-  const hasEvents = homeEvents.length > 0 || awayEvents.length > 0
-  const hasLineups = lineups.length >= 2
+  // Build a unified event list per team
+  type EventItem =
+    | { kind: 'goal'; minute: number; name: string; assist: string | null; type: string }
+    | { kind: 'card'; minute: number; name: string; card: string }
+    | { kind: 'sub';  minute: number; out: string; in: string }
+
+  const homeEvents: EventItem[] = []
+  const awayEvents: EventItem[] = []
+
+  for (const g of goals) {
+    const isHome = g.team.id === match.homeTeam.id
+    const ev: EventItem = {
+      kind: 'goal',
+      minute: g.minute,
+      name: lastNameOf(g.scorer.name),
+      assist: g.assist ? lastNameOf(g.assist.name) : null,
+      type: g.type,
+    }
+    ;(isHome ? homeEvents : awayEvents).push(ev)
+  }
+
+  for (const b of bookings) {
+    const isHome = b.team.id === match.homeTeam.id
+    const ev: EventItem = {
+      kind: 'card',
+      minute: b.minute,
+      name: lastNameOf(b.player.name),
+      card: b.card,
+    }
+    ;(isHome ? homeEvents : awayEvents).push(ev)
+  }
+
+  for (const s of subs) {
+    const isHome = s.team.id === match.homeTeam.id
+    const ev: EventItem = {
+      kind: 'sub',
+      minute: s.minute,
+      out: lastNameOf(s.playerOut.name),
+      in: lastNameOf(s.playerIn.name),
+    }
+    ;(isHome ? homeEvents : awayEvents).push(ev)
+  }
+
+  homeEvents.sort((a, b) => a.minute - b.minute)
+  awayEvents.sort((a, b) => a.minute - b.minute)
+
+  function renderEvent(ev: EventItem, side: 'home' | 'away', i: number) {
+    const isAway = side === 'away'
+    const minLabel = `${ev.minute}'`
+
+    if (ev.kind === 'goal') {
+      const icon = ev.type === 'OWN' ? '⚽ OG' : ev.type === 'PENALTY' ? '⚽ P' : '⚽'
+      const iconClass = ev.type === 'OWN'
+        ? 'text-red-400'
+        : ev.type === 'PENALTY'
+        ? 'text-gold'
+        : 'text-white/70'
+      return (
+        <div key={i} className={`flex items-start gap-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
+          <span className={`text-white/30 text-xs w-7 flex-shrink-0 ${isAway ? 'text-left' : 'text-right'}`}>
+            {minLabel}
+          </span>
+          <div className={`flex-1 min-w-0 ${isAway ? 'text-right' : ''}`}>
+            <span className={`text-xs ${iconClass}`}>{icon}</span>
+            <span className="text-white text-xs ml-1">{ev.name}</span>
+            {ev.assist && (
+              <p className={`text-white/30 text-[10px] ${isAway ? 'pr-4' : 'pl-4'}`}>
+                {ev.assist}
+              </p>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    if (ev.kind === 'card') {
+      const cardColor =
+        ev.card === 'RED'
+          ? 'bg-red-500'
+          : ev.card === 'YELLOW_RED'
+          ? 'bg-orange-400'
+          : 'bg-yellow-400'
+      return (
+        <div key={i} className={`flex items-center gap-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
+          <span className={`text-white/30 text-xs w-7 flex-shrink-0 ${isAway ? 'text-left' : 'text-right'}`}>
+            {minLabel}
+          </span>
+          <span className={`inline-block w-2.5 h-3.5 rounded-[2px] flex-shrink-0 ${cardColor}`} />
+          <span className="text-white/60 text-xs truncate">{ev.name}</span>
+        </div>
+      )
+    }
+
+    if (ev.kind === 'sub') {
+      return (
+        <div key={i} className={`flex items-center gap-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
+          <span className={`text-white/30 text-xs w-7 flex-shrink-0 ${isAway ? 'text-left' : 'text-right'}`}>
+            {minLabel}
+          </span>
+          <div className={`min-w-0 ${isAway ? 'text-right' : ''}`}>
+            <p className="text-emerald-400 text-[10px]">↑ {ev.in}</p>
+            <p className="text-white/30 text-[10px]">↓ {ev.out}</p>
+          </div>
+        </div>
+      )
+    }
+
+    return null
+  }
 
   return (
     <div className="px-3 pb-3 space-y-3">
@@ -258,84 +162,18 @@ function MatchDetailPanel({ match }: { match: Match }) {
         </div>
       )}
 
-      {/* Possession bar */}
-      {hasPossession && (
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-white/60 text-xs w-8 text-right">{homePossNum}%</span>
-            <div className="flex flex-1 h-2 rounded-full overflow-hidden">
-              <div className="bg-gold" style={{ width: `${homePossNum}%` }} />
-              <div className="bg-white/20 flex-1" />
-            </div>
-            <span className="text-white/60 text-xs w-8">{awayPossNum}%</span>
-          </div>
-          <p className="text-center text-white/30 text-[10px] uppercase tracking-wider">Possession</p>
-        </div>
-      )}
-
-      {/* Stats rows */}
-      {homeStats && awayStats && (
-        <div className="space-y-1.5">
-          {statRows.map(({ type, label }) => {
-            const hv = parseNum(getStat(homeStats, type))
-            const av = parseNum(getStat(awayStats, type))
-            if ((hv === null || hv === 0) && (av === null || av === 0)) return null
-            const hDisplay = hv !== null ? hv : '-'
-            const aDisplay = av !== null ? av : '-'
-            return (
-              <div key={type} className="grid grid-cols-3 items-center text-xs">
-                <span className="text-white/70 font-heading text-right pr-2">{hDisplay}</span>
-                <span className="text-white/30 text-center text-[10px] uppercase tracking-wider">{label}</span>
-                <span className="text-white/70 font-heading text-left pl-2">{aDisplay}</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Events */}
+      {/* Events two-column */}
       {hasEvents && (
         <>
           <div className="border-t border-white/5" />
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              {renderEventSide(homeEvents, 'home')}
+              {homeEvents.map((ev, i) => renderEvent(ev, 'home', i))}
             </div>
             <div className="space-y-1.5">
-              {renderEventSide(awayEvents, 'away')}
+              {awayEvents.map((ev, i) => renderEvent(ev, 'away', i))}
             </div>
           </div>
-        </>
-      )}
-
-      {/* Lineups toggle */}
-      {hasLineups && (
-        <>
-          <div className="border-t border-white/5" />
-          <button
-            onClick={() => setShowLineups(v => !v)}
-            className="w-full text-center text-white/30 text-[11px] hover:text-white/60 transition-colors py-0.5 flex items-center justify-center gap-1"
-          >
-            {showLineups ? '▴' : '▾'} {showLineups ? 'Hide' : 'Show'} Lineups
-          </button>
-          <AnimatePresence initial={false}>
-            {showLineups && (
-              <motion.div
-                key="lineups"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                style={{ overflow: 'hidden' }}
-              >
-                {lineupsLoading ? (
-                  <div className="flex justify-center py-3"><Spinner /></div>
-                ) : (
-                  <LineupsPanel lineups={lineups} homeTeamName={match.homeTeam.name} />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </>
       )}
     </div>
@@ -360,7 +198,6 @@ export default function ExpandableMatchCard({
         isExpanded ? 'border-white/20' : 'border-white/5'
       } bg-pitch-mid`}
     >
-      {/* The card itself — clickable if there's something to expand */}
       <div
         onClick={() => canExpand && setIsExpanded(v => !v)}
         className={canExpand ? 'cursor-pointer' : ''}
@@ -379,7 +216,6 @@ export default function ExpandableMatchCard({
         )}
       </div>
 
-      {/* Expanded detail */}
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div

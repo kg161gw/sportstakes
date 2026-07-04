@@ -1,6 +1,8 @@
 const AF_KEY = import.meta.env.VITE_API_FOOTBALL_KEY as string | undefined
 const AF_BASE = '/api/apifootball'
-export const afAvailable = !!AF_KEY
+// API-Football free plan only covers seasons up to 2024.
+// WC 2026 data is unavailable on the free tier — disable to stop wasting quota.
+export const afAvailable = false && !!AF_KEY
 
 async function afFetch<T>(path: string): Promise<T> {
   if (!AF_KEY) throw new Error('VITE_API_FOOTBALL_KEY not set')

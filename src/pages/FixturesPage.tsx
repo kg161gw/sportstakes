@@ -8,7 +8,7 @@ import { useUIStore } from '../store/uiStore'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import TeamPanel from '../components/teams/TeamPanel'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
-import type { Match, StandingGroup, Scorer } from '../api/footballApi'
+import type { Match, StandingGroup, Scorer, Standing } from '../api/footballApi'
 
 // ── Group Standings ──────────────────────────────────────────────────
 function GroupTable({ group }: { group: StandingGroup }) {
@@ -259,87 +259,270 @@ function ScheduleView({ matches }: { matches: Match[] }) {
   )
 }
 
-// ── Stats leaderboard ─────────────────────────────────────────────────
+// ── Stats helpers ─────────────────────────────────────────────────────
 
-function ScorerRow({ rank, scorer, statKey }: {
-  rank: number
-  scorer: Scorer
-  statKey: 'goals' | 'assists'
-}) {
-  const value = statKey === 'goals' ? scorer.goals : scorer.assists
-  if (!value) return null
+function StatBadge({ value, label, gold }: { value: string | number; label: string; gold?: boolean }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
-      <span className="text-white/30 font-heading w-5 text-right text-sm flex-shrink-0">{rank}</span>
-      <div className="w-8 h-8 rounded-full bg-pitch-light flex items-center justify-center flex-shrink-0 overflow-hidden">
-        {scorer.team.crest ? (
-          <img src={scorer.team.crest} alt={scorer.team.name} className="w-5 h-5 object-contain" />
-        ) : (
-          <span className="text-white/30 text-xs font-heading">{scorer.player.name.charAt(0)}</span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-white text-sm font-medium truncate">{scorer.player.name}</p>
-        <p className="text-white/40 text-xs truncate">{scorer.team.shortName || scorer.team.name}</p>
-      </div>
-      <div className="text-right flex-shrink-0">
-        <span className="font-heading text-gold text-xl">{value}</span>
-        <p className="text-white/30 text-[10px]">{statKey}</p>
-      </div>
-      {statKey === 'goals' && scorer.penalties !== null && scorer.penalties > 0 && (
-        <span className="text-white/20 text-[10px] ml-1">({scorer.penalties}P)</span>
-      )}
+    <div className="text-center">
+      <p className={`font-heading text-lg ${gold ? 'text-gold' : 'text-white'}`}>{value}</p>
+      <p className="text-white/30 text-[10px]">{label}</p>
     </div>
   )
 }
 
-function StatsView() {
-  const { data: allScorers = [], isLoading } = useScorers()
-  const [statTab, setStatTab] = useState<'goals' | 'assists'>('goals')
+// ── Player leaderboard rows ───────────────────────────────────────────
 
-  const sorted = [...allScorers]
-    .filter(s => statTab === 'goals' ? s.goals > 0 : (s.assists ?? 0) > 0)
+function ScorerRow({ rank, scorer, sortKey }: {
+  rank: number
+  scorer: Scorer
+  sortKey: 'goals' | 'assists' | 'playedMatches'
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
+      <span className="text-white/30 font-heading w-5 text-right text-sm flex-shrink-0">{rank}</span>
+      <div className="w-8 h-8 rounded-full bg-pitch-light flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {scorer.team.crest
+          ? <img src={scorer.team.crest} alt={scorer.team.name} className="w-5 h-5 object-contain" />
+          : <span className="text-white/30 text-xs font-heading">{scorer.player.name.charAt(0)}</span>
+        }
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-medium truncate">{scorer.player.name}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-white/40 text-xs truncate">{scorer.team.shortName || scorer.team.name}</p>
+          {scorer.player.position && (
+            <span className="text-white/20 text-[10px] uppercase">
+              {scorer.player.position === 'Goalkeeper' ? 'GK'
+                : scorer.player.position === 'Defence' ? 'DEF'
+                : scorer.player.position === 'Midfield' ? 'MID'
+                : 'FWD'}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="flex gap-3 flex-shrink-0 text-right">
+        {sortKey !== 'playedMatches' && (
+          <>
+            <StatBadge value={scorer.goals} label="G" gold={sortKey === 'goals'} />
+            <StatBadge value={scorer.assists ?? 0} label="A" gold={sortKey === 'assists'} />
+          </>
+        )}
+        <StatBadge value={scorer.playedMatches} label="Apps" gold={sortKey === 'playedMatches'} />
+        {sortKey === 'goals' && (scorer.penalties ?? 0) > 0 && (
+          <StatBadge value={`${scorer.penalties}P`} label="Pen" />
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Team stat rows ────────────────────────────────────────────────────
+
+function TeamStatRow({ rank, row, sortKey, cleanSheets }: {
+  rank: number
+  row: Standing
+  sortKey: 'goalsFor' | 'goalsAgainst' | 'points'
+  cleanSheets?: number
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
+      <span className="text-white/30 font-heading w-5 text-right text-sm flex-shrink-0">{rank}</span>
+      <div className="w-6 h-6 flex-shrink-0">
+        {row.team.crest && <img src={row.team.crest} alt={row.team.name} className="w-full h-full object-contain" />}
+      </div>
+      <p className="text-white text-sm flex-1 min-w-0 truncate">{row.team.shortName || row.team.name}</p>
+      <div className="flex gap-3 flex-shrink-0 text-right">
+        {sortKey === 'goalsFor' && (
+          <>
+            <StatBadge value={row.goalsFor} label="GF" gold />
+            <StatBadge value={row.playedGames > 0 ? (row.goalsFor / row.playedGames).toFixed(1) : '–'} label="Per G" />
+            <StatBadge value={row.won} label="W" />
+          </>
+        )}
+        {sortKey === 'goalsAgainst' && (
+          <>
+            <StatBadge value={row.goalsAgainst} label="GA" gold />
+            <StatBadge value={cleanSheets ?? '–'} label="CS" />
+            <StatBadge value={row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference} label="GD" />
+          </>
+        )}
+        {sortKey === 'points' && (
+          <>
+            <StatBadge value={row.points} label="Pts" gold />
+            <StatBadge value={`${row.won}/${row.draw}/${row.lost}`} label="W/D/L" />
+            <StatBadge value={row.playedGames} label="P" />
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Stats View ────────────────────────────────────────────────────────
+
+function StatsView({ matches }: { matches: Match[] }) {
+  const { data: allScorers = [], isLoading: scorersLoading } = useScorers()
+  const { data: standings = [] } = useStandings()
+
+  const [view, setView] = useState<'players' | 'teams'>('players')
+  const [playerSort, setPlayerSort] = useState<'goals' | 'assists' | 'playedMatches'>('goals')
+  const [teamSort, setTeamSort] = useState<'goalsFor' | 'goalsAgainst' | 'points'>('goalsFor')
+
+  // Flatten all group standings into one list (deduplicate by team id)
+  const teamRows = (() => {
+    const seen = new Set<number>()
+    const rows: Standing[] = []
+    for (const g of standings.filter(s => s.type === 'TOTAL')) {
+      for (const row of g.table) {
+        if (!seen.has(row.team.id)) {
+          seen.add(row.team.id)
+          rows.push(row)
+        }
+      }
+    }
+    return rows
+  })()
+
+  // Compute clean sheets per team from finished match scores
+  const cleanSheetsByTeam = (() => {
+    const cs: Record<number, number> = {}
+    for (const m of matches) {
+      if (m.status !== 'FINISHED') continue
+      const hg = m.score.fullTime.home ?? 0
+      const ag = m.score.fullTime.away ?? 0
+      if (ag === 0) cs[m.homeTeam.id] = (cs[m.homeTeam.id] ?? 0) + 1
+      if (hg === 0) cs[m.awayTeam.id] = (cs[m.awayTeam.id] ?? 0) + 1
+    }
+    return cs
+  })()
+
+  const sortedScorers = [...allScorers]
+    .filter(s =>
+      playerSort === 'goals' ? s.goals > 0
+      : playerSort === 'assists' ? (s.assists ?? 0) > 0
+      : s.playedMatches > 0
+    )
     .sort((a, b) =>
-      statTab === 'goals'
-        ? b.goals - a.goals
-        : (b.assists ?? 0) - (a.assists ?? 0)
+      playerSort === 'goals' ? b.goals - a.goals
+      : playerSort === 'assists' ? (b.assists ?? 0) - (a.assists ?? 0)
+      : b.playedMatches - a.playedMatches
     )
 
+  const sortedTeams = [...teamRows].sort((a, b) =>
+    teamSort === 'goalsFor' ? b.goalsFor - a.goalsFor
+    : teamSort === 'goalsAgainst' ? a.goalsAgainst - b.goalsAgainst
+    : b.points - a.points
+  )
+
+  const noData = allScorers.length === 0 && teamRows.length === 0
+
+  if (scorersLoading) {
+    return (
+      <div className="space-y-2">
+        {[1, 2, 3, 4, 5].map(i => <div key={i} className="skeleton rounded-xl h-14" />)}
+      </div>
+    )
+  }
+
+  if (noData) {
+    return (
+      <div className="text-center py-16 text-white/30">
+        <p className="text-3xl mb-2">⚽</p>
+        <p>Stats will appear once matches begin</p>
+      </div>
+    )
+  }
+
   return (
-    <div>
-      <div className="flex gap-2 mb-4">
-        {(['goals', 'assists'] as const).map(t => (
+    <div className="space-y-4">
+      {/* Top-level view toggle */}
+      <div className="flex gap-2">
+        {(['players', 'teams'] as const).map(v => (
           <button
-            key={t}
-            onClick={() => setStatTab(t)}
+            key={v}
+            onClick={() => setView(v)}
             className={`px-4 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-              statTab === t ? 'bg-gold text-black' : 'bg-pitch-mid text-white/50 hover:text-white'
+              view === v ? 'bg-gold text-black' : 'bg-pitch-mid text-white/50 hover:text-white'
             }`}
           >
-            {t === 'goals' ? 'Top Scorers' : 'Top Assists'}
+            {v === 'players' ? 'Players' : 'Teams'}
           </button>
         ))}
       </div>
 
-      {isLoading ? (
-        <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="skeleton rounded-xl h-14" />
-          ))}
-        </div>
-      ) : sorted.length === 0 ? (
-        <div className="text-center py-12 text-white/30">
-          <p className="text-3xl mb-2">⚽</p>
-          <p>No stats yet — check back after the first matches</p>
-        </div>
-      ) : (
-        <div className="bg-pitch-mid rounded-xl overflow-hidden">
-          {sorted.slice(0, 20).map((s, i) => (
-            <ScorerRow key={s.player.id} rank={i + 1} scorer={s} statKey={statTab} />
-          ))}
-        </div>
+      {view === 'players' && (
+        <>
+          {/* Player sort tabs */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-none">
+            {([
+              { key: 'goals', label: 'Top Scorers' },
+              { key: 'assists', label: 'Top Assists' },
+              { key: 'playedMatches', label: 'Appearances' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setPlayerSort(key)}
+                className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  playerSort === key ? 'bg-white/15 text-white' : 'bg-pitch-mid text-white/40 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {sortedScorers.length === 0 ? (
+            <p className="text-white/30 text-sm text-center py-8">No data yet</p>
+          ) : (
+            <div className="bg-pitch-mid rounded-xl overflow-hidden">
+              {sortedScorers.slice(0, 25).map((s, i) => (
+                <ScorerRow key={s.player.id} rank={i + 1} scorer={s} sortKey={playerSort} />
+              ))}
+            </div>
+          )}
+        </>
       )}
-      <p className="text-white/20 text-[10px] text-center mt-3">Source: football-data.org · WC 2026</p>
+
+      {view === 'teams' && (
+        <>
+          {/* Team sort tabs */}
+          <div className="flex gap-2 overflow-x-auto scrollbar-none">
+            {([
+              { key: 'goalsFor', label: 'Best Attack' },
+              { key: 'goalsAgainst', label: 'Best Defence' },
+              { key: 'points', label: 'Most Points' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setTeamSort(key)}
+                className={`shrink-0 px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  teamSort === key ? 'bg-white/15 text-white' : 'bg-pitch-mid text-white/40 hover:text-white'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {sortedTeams.length === 0 ? (
+            <p className="text-white/30 text-sm text-center py-8">Standings not yet available</p>
+          ) : (
+            <div className="bg-pitch-mid rounded-xl overflow-hidden">
+              {sortedTeams.map((row, i) => (
+                <TeamStatRow
+                  key={row.team.id}
+                  rank={i + 1}
+                  row={row}
+                  sortKey={teamSort}
+                  cleanSheets={cleanSheetsByTeam[row.team.id]}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      <p className="text-white/20 text-[10px] text-center">WC 2026 · football-data.org</p>
     </div>
   )
 }
@@ -400,7 +583,7 @@ export default function FixturesPage() {
           <BracketView matches={matches} />
         ))}
 
-      {tab === 'stats' && <StatsView />}
+      {tab === 'stats' && <StatsView matches={matches} />}
 
       <TeamPanel teamId={selectedTeamId} onClose={() => setSelectedTeam(null)} />
     </PageWrapper>
