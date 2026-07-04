@@ -5,31 +5,37 @@ import StatusBadge from './StatusBadge'
 import ScoreBadge from './ScoreBadge'
 import CountdownTimer from '../shared/CountdownTimer'
 import sweepstake from '../../data/sweepstake.json'
-import { teamFlagEmoji } from '../../utils/teamFlags'
+import { teamFlagUrl, teamFlagEmoji, normaliseTeamName } from '../../utils/teamFlags'
 
 function getParticipant(teamName: string | null): string | null {
   if (!teamName) return null
+  const needle = normaliseTeamName(teamName)
   const p = sweepstake.participants.find(p =>
-    p.teams.some(t => t.toLowerCase() === teamName.toLowerCase())
+    p.teams.some(t => normaliseTeamName(t) === needle)
   )
   return p?.name ?? null
 }
 
 function TeamCrest({ team, size = 'md' }: { team: Match['homeTeam']; size?: 'sm' | 'md' }) {
   const [failed, setFailed] = useState(false)
-  const cls = size === 'sm' ? 'w-4 h-4 text-sm' : 'w-6 h-6 text-xl'
-  const emoji = teamFlagEmoji(team?.name ?? '')
+  const imgCls = size === 'sm' ? 'w-4 h-4' : 'w-6 h-6'
 
-  if (!team?.crest || failed) {
+  // Prefer a reliable flagcdn.com flag image; fall back to the football-data.org
+  // crest only if we have no ISO mapping (clubs, unknown teams).
+  const flagSrc = teamFlagUrl(team?.name ?? '', 'w40')
+  const src = flagSrc ?? team?.crest
+
+  if (!src || failed) {
+    const emoji = teamFlagEmoji(team?.name ?? '')
     return emoji
-      ? <span className={`${cls} flex items-center justify-center leading-none`}>{emoji}</span>
+      ? <span className={`${imgCls} flex-shrink-0 flex items-center justify-center leading-none text-base`}>{emoji}</span>
       : null
   }
   return (
     <img
-      src={team.crest}
-      alt={team.name}
-      className={`${size === 'sm' ? 'w-4 h-4' : 'w-6 h-6'} object-contain`}
+      src={src}
+      alt={team?.name}
+      className={`${imgCls} flex-shrink-0 object-contain rounded-sm`}
       loading="lazy"
       onError={() => setFailed(true)}
     />

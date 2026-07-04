@@ -9,23 +9,26 @@ import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import TeamPanel from '../components/teams/TeamPanel'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
 import { TeamCrest } from '../components/fixtures/MatchCard'
-import { teamFlagEmoji } from '../utils/teamFlags'
+import { teamFlagUrl, teamFlagEmoji, normaliseTeamName } from '../utils/teamFlags'
 import type { Match, StandingGroup, Scorer, Standing } from '../api/footballApi'
 
-// ── Shared crest + flag emoji fallback ───────────────────────────────
+// ── Shared crest + flag image fallback ───────────────────────────────
 function CrestOrFlag({ name, crest, className }: { name: string; crest?: string; className?: string }) {
   const [failed, setFailed] = useState(false)
-  const emoji = teamFlagEmoji(name)
-  if (!crest || failed) {
+  const flagSrc = teamFlagUrl(name, 'w40')
+  const src = flagSrc ?? crest
+
+  if (!src || failed) {
+    const emoji = teamFlagEmoji(name)
     return emoji
       ? <span className={`flex items-center justify-center leading-none ${className}`}>{emoji}</span>
       : null
   }
   return (
     <img
-      src={crest}
+      src={src}
       alt={name}
-      className={`object-contain ${className ?? ''}`}
+      className={`object-contain rounded-sm ${className ?? ''}`}
       loading="lazy"
       onError={() => setFailed(true)}
     />
@@ -86,8 +89,9 @@ import sweepstake from '../data/sweepstake.json'
 
 function getParticipant(teamName: string | null | undefined): string | null {
   if (!teamName) return null
+  const needle = normaliseTeamName(teamName)
   const p = sweepstake.participants.find(p =>
-    p.teams.some(t => t.toLowerCase() === teamName.toLowerCase())
+    p.teams.some(t => normaliseTeamName(t) === needle)
   )
   return p?.name ?? null
 }
