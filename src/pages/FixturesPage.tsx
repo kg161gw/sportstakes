@@ -7,7 +7,10 @@ import { useUIStore } from '../store/uiStore'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import TeamPanel from '../components/teams/TeamPanel'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
+import { useTopScorers, useTopAssists } from '../hooks/useApiFootball'
+import { afAvailable } from '../api/apiFootballApi'
 import type { Match, StandingGroup } from '../api/footballApi'
+import type { AfTopPlayer } from '../api/apiFootballApi'
 
 // ── Group Standings ──────────────────────────────────────────────────
 function GroupTable({ group }: { group: StandingGroup }) {
@@ -258,6 +261,114 @@ function ScheduleView({ matches }: { matches: Match[] }) {
   )
 }
 
+// ── Stats leaderboard ─────────────────────────────────────────────────
+
+function PlayerLeaderRow({
+  rank,
+  entry,
+  statValue,
+  statLabel,
+}: {
+  rank: number
+  entry: AfTopPlayer
+  statValue: number | null
+  statLabel: string
+}) {
+  const { player } = entry
+  const team = entry.statistics[0]?.team
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
+      <span className="text-white/30 font-heading w-5 text-right text-sm flex-shrink-0">{rank}</span>
+      {player.photo ? (
+        <img
+          src={player.photo}
+          alt={player.name}
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+        />
+      ) : (
+        <div className="w-8 h-8 rounded-full bg-pitch-light flex items-center justify-center flex-shrink-0">
+          <span className="text-white/30 text-xs font-heading">{player.name.charAt(0)}</span>
+        </div>
+      )}
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-medium truncate">{player.name}</p>
+        {team && (
+          <div className="flex items-center gap-1">
+            {team.logo && (
+              <img src={team.logo} alt={team.name} className="w-3 h-3 object-contain" />
+            )}
+            <p className="text-white/40 text-xs truncate">{team.name}</p>
+          </div>
+        )}
+      </div>
+      <div className="text-right flex-shrink-0">
+        <span className="font-heading text-gold text-lg">{statValue ?? '-'}</span>
+        <p className="text-white/30 text-[10px]">{statLabel}</p>
+      </div>
+    </div>
+  )
+}
+
+function StatsView() {
+  const { data: scorers = [], isLoading: scorersLoading } = useTopScorers()
+  const { data: assisters = [], isLoading: assistsLoading } = useTopAssists()
+  const [statTab, setStatTab] = useState<'scorers' | 'assists'>('scorers')
+
+  if (!afAvailable) {
+    return (
+      <div className="text-center py-12 text-white/30 text-sm">
+        Add VITE_API_FOOTBALL_KEY for stats leaderboards
+      </div>
+    )
+  }
+
+  const isLoading = statTab === 'scorers' ? scorersLoading : assistsLoading
+  const players = statTab === 'scorers' ? scorers : assisters
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-4">
+        {(['scorers', 'assists'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setStatTab(t)}
+            className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              statTab === t ? 'bg-gold text-black' : 'bg-pitch-mid text-white/50 hover:text-white'
+            }`}
+          >
+            {t === 'scorers' ? 'Top Scorers' : 'Top Assists'}
+          </button>
+        ))}
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="skeleton rounded-xl h-14" />
+          ))}
+        </div>
+      ) : players.length === 0 ? (
+        <div className="text-center py-12 text-white/30">
+          Stats not yet available
+        </div>
+      ) : (
+        <div className="bg-pitch-mid rounded-xl overflow-hidden">
+          {players.slice(0, 20).map((p, i) => (
+            <PlayerLeaderRow
+              key={p.player.id}
+              rank={i + 1}
+              entry={p}
+              statValue={p.statistics[0]?.goals[statTab === 'scorers' ? 'total' : 'assists'] ?? null}
+              statLabel={statTab === 'scorers' ? 'goals' : 'assists'}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Page ─────────────────────────────────────────────────────────────
 export default function FixturesPage() {
   const { data: matches = [], isLoading } = useMatches()
@@ -271,6 +382,7 @@ export default function FixturesPage() {
     { id: 'schedule', label: 'Schedule' },
     { id: 'groups', label: 'Groups' },
     { id: 'bracket', label: 'Bracket' },
+    { id: 'stats', label: 'Stats' },
   ]
 
   return (
@@ -312,6 +424,8 @@ export default function FixturesPage() {
         ) : (
           <BracketView matches={matches} />
         ))}
+
+      {tab === 'stats' && <StatsView />}
 
       <TeamPanel teamId={selectedTeamId} onClose={() => setSelectedTeam(null)} />
     </PageWrapper>

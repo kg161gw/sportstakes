@@ -5,11 +5,13 @@ import PageWrapper from '../components/shared/PageWrapper'
 import SlidingTabs from '../components/shared/SlidingTabs'
 import { useTeamDetail, useTeamMatches, useScorers } from '../hooks/useTeams'
 import { useSquadEnrichment, usePlayerEnrichment } from '../hooks/usePlayerEnrichment'
+import { useTeamSdbData } from '../hooks/useTeamEnrichment'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import { SkeletonCard, SkeletonText } from '../components/shared/LoadingSkeleton'
 import Spinner from '../components/shared/Spinner'
-import { useApiPlayerStats } from '../hooks/useApiFootball'
+import { useApiPlayerStats, useAfTeamId, useTeamSeasonStats, useTeamInjuries } from '../hooks/useApiFootball'
 import { afAvailable } from '../api/apiFootballApi'
+import { calcTeamStatsFromMatches, calcTeamSeasonRatings, calcPlayerStats } from '../utils/calcStats'
 import type { Match, Player } from '../api/footballApi'
 import type { TsdbPlayer } from '../api/theSportsDbApi'
 
@@ -29,6 +31,36 @@ const POSITION_LABEL: Record<string, string> = {
   Offence: 'Forwards',
 }
 
+// ── Rating bar ─────────────────────────────────────────────────────────
+
+function RatingBar({
+  label,
+  value,
+  color = 'bg-gold',
+}: {
+  label: string
+  value: number | null
+  color?: string
+}) {
+  if (value === null) return null
+  return (
+    <div>
+      <div className="flex justify-between text-xs mb-1">
+        <span className="text-white/50">{label}</span>
+        <span className="text-white/70 font-heading">{value}</span>
+      </div>
+      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className={`h-full rounded-full ${color}`}
+        />
+      </div>
+    </div>
+  )
+}
+
 // ── Player Detail Panel ────────────────────────────────────────────────
 function PlayerPanel({
   player,
@@ -41,6 +73,8 @@ function PlayerPanel({
   const { data: playerStats, isLoading: statsLoading } = useApiPlayerStats(player.name)
   const stat = playerStats?.[0]?.statistics?.[0]
 
+  const derived = stat ? calcPlayerStats(stat, player.position ?? '') : null
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -51,7 +85,7 @@ function PlayerPanel({
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <motion.div
-        className="relative w-full max-w-md bg-pitch-mid rounded-t-2xl pb-8 overflow-hidden"
+        className="relative w-full max-w-md bg-pitch-mid rounded-t-2xl pb-8 overflow-hidden max-h-[85vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
@@ -97,7 +131,7 @@ function PlayerPanel({
           </div>
         </div>
 
-        {/* enriched bio stats */}
+        {/* enriched bio */}
         {!isLoading && enriched && (
           <div className="px-5 mt-2 space-y-3">
             {(enriched.strHeight || enriched.strWeight || enriched.strNumber) && (
@@ -164,6 +198,31 @@ function PlayerPanel({
                   ))
               })()}
             </div>
+          </div>
+        )}
+
+        {/* Per-90 stats */}
+        {afAvailable && derived && stat?.games.minutes && stat.games.minutes >= 45 && (
+          <div className="px-5 mt-3">
+            <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">Per 90 Minutes</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { value: derived.goalsP90, label: 'Goals/90' },
+                { value: derived.assistsP90, label: 'Ast/90' },
+                { value: derived.involvementP90, label: 'G+A/90' },
+                { value: derived.shotsP90, label: 'Shots/90' },
+                { value: derived.tacklesP90, label: 'Tkl/90' },
+                { value: derived.shotAccuracy !== null ? `${derived.shotAccuracy}%` : null, label: 'Shot Acc' },
+              ]
+                .filter(item => item.value !== null && item.value !== 0)
+                .map(item => (
+                  <div key={item.label} className="bg-pitch-light rounded-lg p-2 text-center">
+                    <p className="font-heading text-sm text-white/80">{item.value}</p>
+                    <p className="text-white/40 text-[10px]">{item.label}</p>
+                  </div>
+                ))}
+            </div>
+            <p className="text-white/20 text-[9px] mt-2">{derived.positionRatingFormula}</p>
           </div>
         )}
 
@@ -236,6 +295,14 @@ export default function TeamDetailPage() {
   const { data: matches = [], isLoading: matchesLoading } = useTeamMatches(teamId)
   const { data: allScorers = [], isLoading: scorersLoading } = useScorers()
 
+  // TheSportsDB team enrichment
+  const { data: sdbTeam } = useTeamSdbData(team?.name)
+
+  // API-Football team enrichment
+  const afTeamId = useAfTeamId(team?.name)
+  const { data: afSeasonStats } = useTeamSeasonStats(afTeamId)
+  const { data: injuries = [] } = useTeamInjuries(afTeamId)
+
   const squad = team?.squad ?? []
   const squadNames = squad.map(p => p.name)
   const { data: enrichmentMap = {} } = useSquadEnrichment(squadNames)
@@ -243,6 +310,15 @@ export default function TeamDetailPage() {
   const teamScorers = allScorers.filter(s => s.team.id === teamId)
   const finishedMatches = matches.filter((m: Match) => m.status === 'FINISHED')
   const upcomingMatches = matches.filter((m: Match) => m.status === 'SCHEDULED' || m.status === 'TIMED')
+
+  // Calculated stats
+  const matchStats = calcTeamStatsFromMatches(matches, teamId ?? 0)
+  const seasonRatings = afSeasonStats ? calcTeamSeasonRatings(afSeasonStats) : null
+
+  // Prefer AF season stats where available, else fall back to match calculation
+  const attackScore = seasonRatings?.attackScore ?? matchStats.attackScore
+  const defenceScore = seasonRatings?.defenceScore ?? matchStats.defenceScore
+  const disciplineScore = seasonRatings?.disciplineScore ?? null
 
   function getResult(m: Match) {
     if (!team) return 'D'
@@ -298,7 +374,19 @@ export default function TeamDetailPage() {
         ← Back
       </button>
 
-      {/* Header */}
+      {/* Header — with optional SportsDB banner */}
+      {sdbTeam?.strFanart1 && (
+        <div className="relative w-full h-28 rounded-xl overflow-hidden mb-4">
+          <img
+            src={sdbTeam.strFanart1}
+            alt={team.name}
+            className="w-full h-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).closest('div')!.style.display = 'none' }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-pitch-mid/90 to-transparent" />
+        </div>
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -310,6 +398,9 @@ export default function TeamDetailPage() {
         <div>
           <h1 className="font-heading text-2xl text-white">{team.name}</h1>
           <p className="text-white/40 text-sm">{team.area?.name}</p>
+          {sdbTeam?.strStadium && (
+            <p className="text-white/30 text-xs mt-0.5">🏟 {sdbTeam.strStadium}</p>
+          )}
           {form.length > 0 && (
             <div className="flex gap-1 mt-2">
               {form.map((r, i) => (
@@ -332,6 +423,7 @@ export default function TeamDetailPage() {
       {/* OVERVIEW */}
       {tab === 'overview' && (
         <div className="space-y-4">
+          {/* Coach */}
           {team.coach && (
             <div className="bg-pitch-mid rounded-xl p-4">
               <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Head Coach</p>
@@ -344,9 +436,107 @@ export default function TeamDetailPage() {
                   )}
                 </div>
               </div>
+              {seasonRatings?.preferredFormation && (
+                <p className="text-white/30 text-xs mt-2">
+                  Preferred formation: <span className="text-white/60">{seasonRatings.preferredFormation}</span>
+                </p>
+              )}
             </div>
           )}
 
+          {/* Season stats summary */}
+          {matchStats.played > 0 && (
+            <div className="bg-pitch-mid rounded-xl p-4">
+              <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Season Stats</p>
+              <div className="grid grid-cols-4 gap-2 text-center mb-4">
+                <div>
+                  <p className="font-heading text-xl text-white">{matchStats.played}</p>
+                  <p className="text-white/40 text-xs">Played</p>
+                </div>
+                <div>
+                  <p className="font-heading text-xl text-win">{matchStats.wins}</p>
+                  <p className="text-white/40 text-xs">Won</p>
+                </div>
+                <div>
+                  <p className="font-heading text-xl text-white/60">{matchStats.draws}</p>
+                  <p className="text-white/40 text-xs">Drawn</p>
+                </div>
+                <div>
+                  <p className="font-heading text-xl text-loss">{matchStats.losses}</p>
+                  <p className="text-white/40 text-xs">Lost</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center mb-4">
+                <div>
+                  <p className="font-heading text-2xl text-gold">{matchStats.goalsFor}</p>
+                  <p className="text-white/40 text-xs">Goals For</p>
+                </div>
+                <div>
+                  <p className="font-heading text-2xl text-white">
+                    {matchStats.goalDiff > 0 ? `+${matchStats.goalDiff}` : matchStats.goalDiff}
+                  </p>
+                  <p className="text-white/40 text-xs">GD</p>
+                </div>
+                <div>
+                  <p className="font-heading text-2xl text-white/50">{matchStats.goalsAgainst}</p>
+                  <p className="text-white/40 text-xs">Against</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-center text-xs text-white/40 border-t border-white/5 pt-3">
+                {matchStats.goalsPerMatch !== null && (
+                  <span>{matchStats.goalsPerMatch} goals/game</span>
+                )}
+                {matchStats.cleanSheetPct !== null && (
+                  <span>{matchStats.cleanSheets} clean sheet{matchStats.cleanSheets !== 1 ? 's' : ''} ({matchStats.cleanSheetPct}%)</span>
+                )}
+                {matchStats.winPct !== null && (
+                  <span>{matchStats.winPct}% win rate</span>
+                )}
+                {afSeasonStats && (
+                  <span>{afSeasonStats.failedToScore.total} failed to score</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Ratings bars */}
+          {(attackScore !== null || defenceScore !== null || disciplineScore !== null) && (
+            <div className="bg-pitch-mid rounded-xl p-4 space-y-3">
+              <p className="text-white/40 text-xs uppercase tracking-wider">Team Ratings</p>
+              <RatingBar label="Attack" value={attackScore} color="bg-gold" />
+              <RatingBar label="Defence" value={defenceScore} color="bg-emerald-500" />
+              <RatingBar label="Discipline" value={disciplineScore} color="bg-blue-400" />
+              {seasonRatings && (
+                <p className="text-white/20 text-[9px]">
+                  team-v1 · attack: gf/match×33 · defence: 100−ga/match×33 · discipline: 100−cards/match×15
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Injuries */}
+          {injuries.length > 0 && (
+            <div className="bg-pitch-mid rounded-xl p-4">
+              <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Injuries / Doubts</p>
+              <div className="space-y-2">
+                {injuries.slice(0, 5).map((inj, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <p className="text-white text-sm">{inj.player.name}</p>
+                    <div className="text-right">
+                      <p className="text-orange-400 text-xs">{inj.player.type}</p>
+                      {inj.player.reason && (
+                        <p className="text-white/30 text-[10px]">{inj.player.reason}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Squad count */}
           <div className="bg-pitch-mid rounded-xl p-4">
             <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Squad</p>
             <div className="grid grid-cols-4 gap-2">
@@ -361,11 +551,11 @@ export default function TeamDetailPage() {
             </div>
           </div>
 
+          {/* Top scorer */}
           {teamScorers.length > 0 && (
             <div className="bg-pitch-mid rounded-xl p-4">
               <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Top Scorer</p>
               <div className="flex items-center gap-3">
-                {/* top scorer photo */}
                 {(() => {
                   const enriched = enrichmentMap[teamScorers[0].player.name]
                   const photo = enriched?.strThumb ?? null
@@ -395,6 +585,17 @@ export default function TeamDetailPage() {
             </div>
           )}
 
+          {/* Team description from SportsDB */}
+          {sdbTeam?.strDescriptionEN && (
+            <div className="bg-pitch-mid rounded-xl p-4">
+              <p className="text-white/40 text-xs uppercase tracking-wider mb-2">About</p>
+              <p className="text-white/50 text-xs leading-relaxed line-clamp-6">
+                {sdbTeam.strDescriptionEN}
+              </p>
+            </div>
+          )}
+
+          {/* Recent results */}
           {finishedMatches.length > 0 && (
             <div>
               <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Recent Results</p>
@@ -477,7 +678,6 @@ export default function TeamDetailPage() {
               })}
             </div>
           ) : (
-            /* Fallback: show goals-for / goals-against derived from match results */
             <>
               {finishedMatches.length > 0 ? (
                 <>
@@ -485,37 +685,16 @@ export default function TeamDetailPage() {
                     <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Goals Summary</p>
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <p className="font-heading text-3xl text-gold">
-                          {finishedMatches.reduce((acc, m: Match) => {
-                            const isHome = m.homeTeam.id === teamId
-                            return acc + (isHome ? (m.score.fullTime.home ?? 0) : (m.score.fullTime.away ?? 0))
-                          }, 0)}
-                        </p>
+                        <p className="font-heading text-3xl text-gold">{matchStats.goalsFor}</p>
                         <p className="text-white/40 text-xs mt-1">Goals For</p>
                       </div>
                       <div>
-                        <p className="font-heading text-3xl text-white/60">
-                          {finishedMatches.reduce((acc, m: Match) => {
-                            const isHome = m.homeTeam.id === teamId
-                            return acc + (isHome ? (m.score.fullTime.away ?? 0) : (m.score.fullTime.home ?? 0))
-                          }, 0)}
-                        </p>
+                        <p className="font-heading text-3xl text-white/60">{matchStats.goalsAgainst}</p>
                         <p className="text-white/40 text-xs mt-1">Goals Against</p>
                       </div>
                       <div>
                         <p className="font-heading text-3xl text-white">
-                          {(() => {
-                            const gf = finishedMatches.reduce((acc, m: Match) => {
-                              const isHome = m.homeTeam.id === teamId
-                              return acc + (isHome ? (m.score.fullTime.home ?? 0) : (m.score.fullTime.away ?? 0))
-                            }, 0)
-                            const ga = finishedMatches.reduce((acc, m: Match) => {
-                              const isHome = m.homeTeam.id === teamId
-                              return acc + (isHome ? (m.score.fullTime.away ?? 0) : (m.score.fullTime.home ?? 0))
-                            }, 0)
-                            const diff = gf - ga
-                            return diff > 0 ? `+${diff}` : diff
-                          })()}
+                          {matchStats.goalDiff > 0 ? `+${matchStats.goalDiff}` : matchStats.goalDiff}
                         </p>
                         <p className="text-white/40 text-xs mt-1">Difference</p>
                       </div>

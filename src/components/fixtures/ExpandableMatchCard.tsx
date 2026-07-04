@@ -1,9 +1,15 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Match } from '../../api/footballApi'
-import type { AfTeamStats, AfEvent } from '../../api/apiFootballApi'
+import type { AfTeamStats, AfEvent, AfLineup } from '../../api/apiFootballApi'
 import { afAvailable } from '../../api/apiFootballApi'
-import { useFixtureId, useFixtureStats, useFixtureEvents, nameMatch } from '../../hooks/useApiFootball'
+import {
+  useFixtureId,
+  useFixtureStats,
+  useFixtureEvents,
+  useFixtureLineups,
+  nameMatch,
+} from '../../hooks/useApiFootball'
 import { useMatchDetail } from '../../hooks/useMatches'
 import Spinner from '../shared/Spinner'
 import MatchCard from './MatchCard'
@@ -33,13 +39,78 @@ function CardChip({ type }: { type: string }) {
   return <span className="inline-block w-3 h-4 rounded-[2px] bg-yellow-400 flex-shrink-0" />
 }
 
+// ── Lineups ────────────────────────────────────────────────────────────
+
+function LineupSide({
+  lineup,
+  isAway,
+}: {
+  lineup: AfLineup
+  isAway: boolean
+}) {
+  const starters = lineup.startXI.map(e => e.player)
+  const subs = lineup.substitutes.map(e => e.player)
+
+  return (
+    <div className={`flex-1 min-w-0 ${isAway ? 'text-right' : ''}`}>
+      <div className={`flex items-center gap-1 mb-1.5 ${isAway ? 'flex-row-reverse' : ''}`}>
+        <img
+          src={lineup.team.logo}
+          alt={lineup.team.name}
+          className="w-4 h-4 object-contain"
+          onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
+        />
+        <span className="text-white/60 text-xs font-heading truncate">{lineup.formation ?? ''}</span>
+      </div>
+      {starters.map(p => (
+        <p key={p.id} className="text-white/70 text-[11px] truncate leading-5">
+          <span className="text-white/30 mr-1">{p.number}</span>
+          {lastNameOf(p.name)}
+        </p>
+      ))}
+      {subs.length > 0 && (
+        <>
+          <p className="text-white/20 text-[10px] mt-1.5 mb-0.5 uppercase tracking-wider">Subs</p>
+          {subs.map(p => (
+            <p key={p.id} className="text-white/30 text-[11px] truncate leading-4">
+              <span className="mr-1">{p.number}</span>
+              {lastNameOf(p.name)}
+            </p>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+function LineupsPanel({ lineups, homeTeamName }: { lineups: AfLineup[]; homeTeamName: string }) {
+  if (lineups.length < 2) return null
+  const home = lineups.find(l => nameMatch(l.team.name, homeTeamName))
+  const away = lineups.find(l => !nameMatch(l.team.name, homeTeamName))
+  if (!home || !away) return null
+
+  return (
+    <div className="px-3 pb-1">
+      <p className="text-white/30 text-[10px] uppercase tracking-wider text-center mb-2">Lineups</p>
+      <div className="flex gap-3">
+        <LineupSide lineup={home} isAway={false} />
+        <div className="w-px bg-white/10 flex-shrink-0" />
+        <LineupSide lineup={away} isAway={true} />
+      </div>
+    </div>
+  )
+}
+
 // ── Match Detail Panel ────────────────────────────────────────────────
 
 function MatchDetailPanel({ match }: { match: Match }) {
   const fixtureId = useFixtureId(match.homeTeam.name, match.awayTeam.name, match.utcDate)
   const { data: statsData = [], isLoading: statsLoading } = useFixtureStats(fixtureId)
   const { data: events = [], isLoading: eventsLoading } = useFixtureEvents(fixtureId)
+  const { data: lineups = [], isLoading: lineupsLoading } = useFixtureLineups(fixtureId)
   const { data: fdDetail } = useMatchDetail(match.id)
+
+  const [showLineups, setShowLineups] = useState(false)
 
   // Loading
   if ((statsLoading || eventsLoading) && afAvailable) {
@@ -60,7 +131,7 @@ function MatchDetailPanel({ match }: { match: Match }) {
   }
 
   // No data after loading
-  if (statsData.length === 0 && events.length === 0) {
+  if (statsData.length === 0 && events.length === 0 && lineups.length === 0) {
     return (
       <div className="px-3 pb-3 text-white/30 text-xs text-center">
         Stats not yet available
@@ -174,6 +245,7 @@ function MatchDetailPanel({ match }: { match: Match }) {
   }
 
   const hasEvents = homeEvents.length > 0 || awayEvents.length > 0
+  const hasLineups = lineups.length >= 2
 
   return (
     <div className="px-3 pb-3 space-y-3">
@@ -232,6 +304,37 @@ function MatchDetailPanel({ match }: { match: Match }) {
               {renderEventSide(awayEvents, 'away')}
             </div>
           </div>
+        </>
+      )}
+
+      {/* Lineups toggle */}
+      {hasLineups && (
+        <>
+          <div className="border-t border-white/5" />
+          <button
+            onClick={() => setShowLineups(v => !v)}
+            className="w-full text-center text-white/30 text-[11px] hover:text-white/60 transition-colors py-0.5 flex items-center justify-center gap-1"
+          >
+            {showLineups ? '▴' : '▾'} {showLineups ? 'Hide' : 'Show'} Lineups
+          </button>
+          <AnimatePresence initial={false}>
+            {showLineups && (
+              <motion.div
+                key="lineups"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ overflow: 'hidden' }}
+              >
+                {lineupsLoading ? (
+                  <div className="flex justify-center py-3"><Spinner /></div>
+                ) : (
+                  <LineupsPanel lineups={lineups} homeTeamName={match.homeTeam.name} />
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </div>

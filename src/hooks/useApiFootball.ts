@@ -78,12 +78,85 @@ export function useFixtureEvents(fixtureId: number | null) {
   })
 }
 
+export function useFixtureLineups(fixtureId: number | null) {
+  return useQuery({
+    queryKey: ['apf', 'lineups', fixtureId],
+    queryFn: () => apiFootballApi.fixtureLineups(fixtureId!),
+    enabled: afAvailable && fixtureId !== null,
+    staleTime: 60 * 60_000,
+    retry: 1,
+  })
+}
+
+export function useFixturePlayers(fixtureId: number | null) {
+  return useQuery({
+    queryKey: ['apf', 'fixture-players', fixtureId],
+    queryFn: () => apiFootballApi.fixturePlayers(fixtureId!),
+    enabled: afAvailable && fixtureId !== null,
+    staleTime: 60 * 60_000,
+    retry: 1,
+  })
+}
+
 export function useApiPlayerStats(name: string | undefined) {
   return useQuery({
     queryKey: ['apf', 'player', name],
     queryFn: () => apiFootballApi.playerStats(name!),
     enabled: afAvailable && !!name,
     staleTime: 24 * 60 * 60_000,
+    retry: 1,
+  })
+}
+
+/** Resolve an API-Football team ID from the WC fixture list by fuzzy team name match */
+export function useAfTeamId(teamName: string | undefined): number | null {
+  const { data: fixtures = [] } = useWcFixtureLookup()
+  return useMemo(() => {
+    if (!teamName || !fixtures.length) return null
+    for (const f of fixtures) {
+      if (nameMatch(teamName, f.teams.home.name)) return f.teams.home.id
+      if (nameMatch(teamName, f.teams.away.name)) return f.teams.away.id
+    }
+    return null
+  }, [fixtures, teamName])
+}
+
+export function useTeamSeasonStats(afTeamId: number | null) {
+  return useQuery({
+    queryKey: ['apf', 'team-season-stats', afTeamId],
+    queryFn: () => apiFootballApi.teamSeasonStats(afTeamId!),
+    enabled: afAvailable && afTeamId !== null,
+    staleTime: 60 * 60_000,
+    retry: 1,
+  })
+}
+
+export function useTeamInjuries(afTeamId: number | null) {
+  return useQuery({
+    queryKey: ['apf', 'team-injuries', afTeamId],
+    queryFn: () => apiFootballApi.teamInjuries(afTeamId!),
+    enabled: afAvailable && afTeamId !== null,
+    staleTime: 30 * 60_000,
+    retry: 1,
+  })
+}
+
+export function useTopScorers() {
+  return useQuery({
+    queryKey: ['apf', 'top-scorers'],
+    queryFn: () => apiFootballApi.topScorers(),
+    enabled: afAvailable,
+    staleTime: 30 * 60_000,
+    retry: 1,
+  })
+}
+
+export function useTopAssists() {
+  return useQuery({
+    queryKey: ['apf', 'top-assists'],
+    queryFn: () => apiFootballApi.topAssists(),
+    enabled: afAvailable,
+    staleTime: 30 * 60_000,
     retry: 1,
   })
 }

@@ -25,11 +25,43 @@ export interface TsdbPlayer {
   strNumber: string | null       // shirt number
 }
 
+export interface TsdbTeam {
+  idTeam: string
+  strTeam: string
+  strTeamShort: string | null
+  strAlternate: string | null
+  strSport: string
+  strLeague: string | null
+  strStadium: string | null
+  strStadiumLocation: string | null
+  intStadiumCapacity: string | null
+  strWebsite: string | null
+  strDescriptionEN: string | null
+  strBadge: string | null
+  strLogo: string | null
+  strFanart1: string | null
+  strFanart2: string | null
+  strFanart3: string | null
+  strFanart4: string | null
+  strBanner: string | null
+  strCountry: string | null
+  strColour1: string | null
+  strColour2: string | null
+  intFormedYear: string | null
+  strEquipment: string | null
+}
+
 interface SearchPlayersResponse {
   player: TsdbPlayer[] | null
+}
+
+interface SearchTeamsResponse {
+  teams: TsdbTeam[] | null
 }
 
 export const theSportsDbApi = {
   searchPlayer: (name: string) =>
     tsdbFetch<SearchPlayersResponse>(`/searchplayers.php?p=${encodeURIComponent(name)}`),
+  searchTeam: (name: string) =>
+    tsdbFetch<SearchTeamsResponse>(`/searchteams.php?t=${encodeURIComponent(name)}`),
 }
