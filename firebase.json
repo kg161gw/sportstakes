@@ -4,6 +4,7 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       { "source": "/api/football/**", "function": "footballProxy" },
+      { "source": "/api/apifootball/**", "function": "apiFootballProxy" },
       { "source": "**", "destination": "/index.html" }
     ],
     "headers": [

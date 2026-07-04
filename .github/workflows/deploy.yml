@@ -44,4 +44,5 @@ jobs:
         if: github.ref == 'refs/heads/main'
         run: |
           echo "FOOTBALL_API_KEY=${{ secrets.VITE_API_KEY_PROD }}" > functions/.env
+          echo "API_FOOTBALL_KEY=${{ secrets.VITE_API_FOOTBALL_KEY }}" >> functions/.env
           npx firebase-tools deploy --only hosting,functions --project sportstakes --token ${{ secrets.FIREBASE_TOKEN }} --force
