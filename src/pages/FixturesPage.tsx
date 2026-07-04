@@ -11,11 +11,11 @@ import type { Match, StandingGroup } from '../api/footballApi'
 
 // ── Group Standings ──────────────────────────────────────────────────
 function GroupTable({ group }: { group: StandingGroup }) {
-  const letter = group.group?.replace('GROUP_', '') ?? group.group
+  const letter = group.group ?? ''
   return (
     <div className="bg-pitch-mid rounded-xl overflow-hidden">
       <div className="px-3 py-2 bg-pitch-light/50 flex items-center gap-2">
-        <span className="font-heading text-xs text-gold tracking-wider">GROUP {letter}</span>
+        <span className="font-heading text-xs text-gold tracking-wider">{letter}</span>
       </div>
       <table className="w-full text-xs">
         <thead>
@@ -87,20 +87,20 @@ function BracketMatch({
 
 function BracketView({ matches }: { matches: Match[] }) {
   const rounds = [
-    'ROUND_OF_32',
-    'ROUND_OF_16',
+    'LAST_32',
+    'LAST_16',
     'QUARTER_FINALS',
     'SEMI_FINALS',
-    'FINAL',
     'THIRD_PLACE',
+    'FINAL',
   ]
   const labels: Record<string, string> = {
-    ROUND_OF_32: 'Round of 32',
-    ROUND_OF_16: 'Round of 16',
+    LAST_32: 'Round of 32',
+    LAST_16: 'Round of 16',
     QUARTER_FINALS: 'Quarter Finals',
     SEMI_FINALS: 'Semi Finals',
-    FINAL: 'Final',
     THIRD_PLACE: '3rd Place',
+    FINAL: 'Final',
   }
 
   const byRound: Record<string, Match[]> = {}
@@ -216,7 +216,7 @@ export default function FixturesPage() {
   const { selectedTeamId, setSelectedTeam } = useUIStore()
   const [tab, setTab] = useState('schedule')
 
-  const groupStandings = standings.filter(s => s.stage === 'GROUP_STAGE')
+  const groupStandings = standings.filter(s => s.type === 'TOTAL')
 
   const tabs = [
     { id: 'schedule', label: 'Schedule' },
