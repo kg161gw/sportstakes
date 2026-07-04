@@ -61,26 +61,76 @@ function GroupTable({ group }: { group: StandingGroup }) {
 }
 
 // ── Bracket ──────────────────────────────────────────────────────────
+import sweepstake from '../data/sweepstake.json'
+
+function getParticipant(teamName: string | null | undefined): string | null {
+  if (!teamName) return null
+  const p = sweepstake.participants.find(p =>
+    p.teams.some(t => t.toLowerCase() === teamName.toLowerCase())
+  )
+  return p?.name ?? null
+}
+
+function BracketTeamRow({
+  team,
+  score,
+  isHome,
+}: {
+  team: Match['homeTeam'] | null | undefined
+  score: number | null
+  isHome: boolean
+}) {
+  const name = team?.shortName || team?.tla || team?.name || 'TBD'
+  const participant = getParticipant(team?.name ?? null)
+  const hasTbd = !team?.name
+
+  return (
+    <div className={`px-2 py-1.5 ${isHome ? 'border-b border-white/10' : ''}`}>
+      <div className="flex items-center justify-between gap-1">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {team?.crest && (
+            <img src={team.crest} alt={name} className="w-3.5 h-3.5 object-contain flex-shrink-0" />
+          )}
+          <span className={`text-xs font-medium truncate ${hasTbd ? 'text-white/30' : 'text-white'}`}>
+            {name}
+          </span>
+        </div>
+        {score !== null && (
+          <span className="font-heading text-xs text-gold flex-shrink-0">{score}</span>
+        )}
+      </div>
+      {participant && (
+        <p className="text-[10px] text-gold/60 truncate mt-0.5 pl-5">{participant}</p>
+      )}
+    </div>
+  )
+}
+
 function BracketMatch({
-  homeLabel,
-  awayLabel,
+  match,
   matchNum,
 }: {
-  homeLabel: string
-  awayLabel: string
+  match: Match
   matchNum?: string
 }) {
+  const finished = match.status === 'FINISHED'
   return (
-    <div className="bg-pitch-mid border border-white/10 rounded-lg overflow-hidden w-36 shrink-0">
+    <div className="bg-pitch-light border border-white/10 rounded-lg overflow-hidden w-40 shrink-0">
       {matchNum && (
-        <div className="px-2 py-0.5 bg-pitch-light/40 text-white/30 text-[10px] font-heading tracking-wider">
+        <div className="px-2 py-0.5 bg-white/5 text-white/30 text-[10px] font-heading tracking-wider">
           {matchNum}
         </div>
       )}
-      <div className="px-2 py-1.5 border-b border-white/10 text-xs text-white font-medium truncate">
-        {homeLabel}
-      </div>
-      <div className="px-2 py-1.5 text-xs text-white/60 truncate">{awayLabel}</div>
+      <BracketTeamRow
+        team={match.homeTeam}
+        score={finished ? match.score.fullTime.home : null}
+        isHome
+      />
+      <BracketTeamRow
+        team={match.awayTeam}
+        score={finished ? match.score.fullTime.away : null}
+        isHome={false}
+      />
     </div>
   )
 }
@@ -97,8 +147,8 @@ function BracketView({ matches }: { matches: Match[] }) {
   const labels: Record<string, string> = {
     LAST_32: 'Round of 32',
     LAST_16: 'Round of 16',
-    QUARTER_FINALS: 'Quarter Finals',
-    SEMI_FINALS: 'Semi Finals',
+    QUARTER_FINALS: 'Quarters',
+    SEMI_FINALS: 'Semis',
     THIRD_PLACE: '3rd Place',
     FINAL: 'Final',
   }
@@ -108,15 +158,6 @@ function BracketView({ matches }: { matches: Match[] }) {
     if (rounds.includes(m.stage)) {
       ;(byRound[m.stage] ??= []).push(m)
     }
-  }
-
-  function teamLabel(
-    team: Match['homeTeam'] | null | undefined,
-    score: number | null,
-  ) {
-    if (!team?.name) return 'TBD'
-    const name = team.shortName || team.tla || team.name
-    return score !== null ? `${name}  ${score}` : name
   }
 
   if (Object.keys(byRound).length === 0) {
@@ -131,31 +172,26 @@ function BracketView({ matches }: { matches: Match[] }) {
   return (
     <div className="w-full overflow-hidden rounded-xl bg-pitch-mid border border-white/10 p-3">
       <div className="overflow-x-auto scrollbar-none pb-2">
-      <div className="flex gap-6 min-w-max">
-        {rounds
-          .filter(r => byRound[r]?.length)
-          .map(round => (
-            <div key={round} className="flex flex-col gap-3">
-              <p className="font-heading text-[11px] text-gold/70 tracking-wider uppercase text-center">
-                {labels[round]}
-              </p>
-              <div
-                className={`flex flex-col gap-3 ${
-                  round === 'FINAL' || round === 'SEMI_FINALS' ? 'justify-center flex-1' : ''
-                }`}
-              >
-                {byRound[round].map((m, i) => (
-                  <BracketMatch
-                    key={m.id}
-                    matchNum={`Match ${i + 1}`}
-                    homeLabel={teamLabel(m.homeTeam, m.score.fullTime.home)}
-                    awayLabel={teamLabel(m.awayTeam, m.score.fullTime.away)}
-                  />
-                ))}
+        <div className="flex gap-4 min-w-max items-start">
+          {rounds
+            .filter(r => byRound[r]?.length)
+            .map(round => (
+              <div key={round} className="flex flex-col gap-2">
+                <p className="font-heading text-[11px] text-gold/70 tracking-wider uppercase text-center">
+                  {labels[round]}
+                </p>
+                <div className="flex flex-col gap-2">
+                  {byRound[round].map((m, i) => (
+                    <BracketMatch
+                      key={m.id}
+                      match={m}
+                      matchNum={byRound[round].length > 1 ? `M${i + 1}` : undefined}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-      </div>
+            ))}
+        </div>
       </div>
     </div>
   )
