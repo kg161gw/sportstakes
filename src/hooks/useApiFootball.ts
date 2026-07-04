@@ -1,4 +1,5 @@
-import { useQuery, useMemo } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { apiFootballApi, afAvailable } from '../api/apiFootballApi'
 import type { AfFixture } from '../api/apiFootballApi'
 
