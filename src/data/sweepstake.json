@@ -1,0 +1,15 @@
+{
+  "event": "FIFA World Cup 2026",
+  "participants": [
+    { "name": "Alice", "teams": ["Brazil", "France"] },
+    { "name": "Bob", "teams": ["England", "Argentina"] },
+    { "name": "Charlie", "teams": ["Spain"] },
+    { "name": "Diana", "teams": ["Germany", "Netherlands"] },
+    { "name": "Ed", "teams": ["Portugal"] },
+    { "name": "Fiona", "teams": ["USA", "Mexico"] },
+    { "name": "George", "teams": ["Colombia"] },
+    { "name": "Hannah", "teams": ["Morocco", "Japan"] },
+    { "name": "Ivan", "teams": ["Uruguay"] },
+    { "name": "Jane", "teams": ["Belgium", "Croatia"] }
+  ]
+}

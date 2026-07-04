@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-pitch: #0d2818;
+  --color-pitch-mid: #1a472a;
+  --color-pitch-light: #2d6a4f;
+  --color-gold: #FFD700;
+  --color-gold-dim: #b8960c;
+  --color-win: #22c55e;
+  --color-loss: #ef4444;
+  --color-draw: #94a3b8;
+  --color-live: #ef4444;
+  --font-heading: 'Anton', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background-color: var(--color-pitch);
+  color: white;
+  font-family: var(--font-body);
+  min-height: 100dvh;
+}
+
+.font-heading { font-family: var(--font-heading); }
+
+/* Grass stripe texture */
+.grass-bg {
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent,
+    transparent 40px,
+    rgba(255,255,255,0.015) 40px,
+    rgba(255,255,255,0.015) 80px
+  );
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--color-pitch); }
+::-webkit-scrollbar-thumb { background: var(--color-pitch-light); border-radius: 3px; }
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+.animate-pulse-live { animation: pulse-live 1.2s ease-in-out infinite; }
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #1a472a 25%, #2d6a4f 50%, #1a472a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}

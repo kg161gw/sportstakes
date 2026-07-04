@@ -1,0 +1,49 @@
+{
+  "categories": [
+    {
+      "label": "UK Television",
+      "services": [
+        { "name": "BBC iPlayer", "description": "Live & on-demand coverage", "url": "https://www.bbc.co.uk/iplayer/guide/sport", "logo": "📺", "badge": "FREE" },
+        { "name": "ITV X", "description": "ITV World Cup matches live", "url": "https://www.itv.com/itvx/", "logo": "📺", "badge": "FREE" },
+        { "name": "Sky Sports", "description": "Full tournament coverage", "url": "https://www.skysports.com/watch-sky-sports", "logo": "📡", "badge": "SUB" }
+      ]
+    },
+    {
+      "label": "US Television",
+      "services": [
+        { "name": "Fox Sports / FS1", "description": "Primary US English broadcaster", "url": "https://www.foxsports.com/live", "logo": "📺", "badge": "CABLE" },
+        { "name": "Telemundo / Peacock", "description": "Spanish-language & streaming", "url": "https://www.peacocktv.com", "logo": "🦚", "badge": "SUB" },
+        { "name": "ESPN+", "description": "Streaming coverage", "url": "https://www.espnplus.com", "logo": "📺", "badge": "SUB" }
+      ]
+    },
+    {
+      "label": "International",
+      "services": [
+        { "name": "FIFA+", "description": "Official FIFA streaming platform", "url": "https://www.fifa.com/fifaplus", "logo": "⚽", "badge": "FREE" },
+        { "name": "DAZN", "description": "Available in multiple countries", "url": "https://www.dazn.com", "logo": "🎬", "badge": "SUB" },
+        { "name": "TSN (Canada)", "description": "Canadian broadcast rights", "url": "https://www.tsn.ca", "logo": "📺", "badge": "CABLE" },
+        { "name": "beIN Sports", "description": "MENA & Asia Pacific coverage", "url": "https://www.beinsports.com", "logo": "📡", "badge": "SUB" },
+        { "name": "Optus Sport (AUS)", "description": "Australian streaming", "url": "https://sport.optus.com.au", "logo": "📺", "badge": "SUB" },
+        { "name": "Stan Sport (AUS)", "description": "Australian alternative", "url": "https://www.stan.com.au/sport", "logo": "📺", "badge": "SUB" }
+      ]
+    },
+    {
+      "label": "Radio & Audio",
+      "services": [
+        { "name": "BBC Radio 5 Live", "description": "Live match commentary & analysis", "url": "https://www.bbc.co.uk/sounds/play/live:bbc_radio_five_live", "logo": "📻", "badge": "FREE" },
+        { "name": "talkSPORT", "description": "UK sports radio live stream", "url": "https://talksport.com/listen-live", "logo": "📻", "badge": "FREE" },
+        { "name": "BBC World Service", "description": "International English commentary", "url": "https://www.bbc.co.uk/worldservice", "logo": "📻", "badge": "FREE" }
+      ]
+    },
+    {
+      "label": "Podcasts & YouTube",
+      "services": [
+        { "name": "FIFA YouTube", "description": "Official highlights & live streams", "url": "https://www.youtube.com/@fifatv", "logo": "▶️", "badge": "FREE" },
+        { "name": "The Athletic Football", "description": "In-depth World Cup podcast", "url": "https://podcasts.apple.com/gb/podcast/the-athletic-football-podcast/id1419594682", "logo": "🎙️", "badge": "SUB" },
+        { "name": "World Football Extra", "description": "BBC podcast coverage", "url": "https://www.bbc.co.uk/programmes/p02gsrmh", "logo": "🎙️", "badge": "FREE" },
+        { "name": "Football Weekly (Guardian)", "description": "Guardian football podcast", "url": "https://www.theguardian.com/football/series/footballweekly", "logo": "🎙️", "badge": "FREE" },
+        { "name": "talkSPORT Podcast", "description": "Extended radio coverage", "url": "https://talksport.com/podcasts", "logo": "🎙️", "badge": "FREE" }
+      ]
+    }
+  ]
+}
