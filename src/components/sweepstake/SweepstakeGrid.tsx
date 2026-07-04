@@ -30,9 +30,8 @@ function nextFixture(teamId: number | null, matches: Match[]): Match | null {
   return upcoming[0] ?? null
 }
 
-function FixturePill({ teamId, teamName, matches }: {
+function FixturePill({ teamId, matches }: {
   teamId: number | null
-  teamName: string
   matches: Match[]
 }) {
   const match = nextFixture(teamId, matches)
@@ -99,7 +98,7 @@ export default function SweepstakeGrid() {
                       )}
                       <span className="text-sm text-white font-medium leading-tight">{teamName}</span>
                     </div>
-                    <FixturePill teamId={teamId} teamName={teamName} matches={matches} />
+                    <FixturePill teamId={teamId} matches={matches} />
                   </div>
                 )
 
