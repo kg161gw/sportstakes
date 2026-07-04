@@ -1,6 +1,6 @@
 {
   "projects": {
     "staging": "sportstakes-staging",
-    "production": "sportstakes-prod"
+    "production": "sportstakes"
   }
 }
