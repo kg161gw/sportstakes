@@ -1,9 +1,11 @@
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Match } from '../../api/footballApi'
 import StatusBadge from './StatusBadge'
 import ScoreBadge from './ScoreBadge'
 import CountdownTimer from '../shared/CountdownTimer'
 import sweepstake from '../../data/sweepstake.json'
+import { teamFlagEmoji } from '../../utils/teamFlags'
 
 function getParticipant(teamName: string | null): string | null {
   if (!teamName) return null
@@ -13,15 +15,34 @@ function getParticipant(teamName: string | null): string | null {
   return p?.name ?? null
 }
 
+function TeamCrest({ team, size = 'md' }: { team: Match['homeTeam']; size?: 'sm' | 'md' }) {
+  const [failed, setFailed] = useState(false)
+  const cls = size === 'sm' ? 'w-4 h-4 text-sm' : 'w-6 h-6 text-xl'
+  const emoji = teamFlagEmoji(team?.name ?? '')
+
+  if (!team?.crest || failed) {
+    return emoji
+      ? <span className={`${cls} flex items-center justify-center leading-none`}>{emoji}</span>
+      : null
+  }
+  return (
+    <img
+      src={team.crest}
+      alt={team.name}
+      className={`${size === 'sm' ? 'w-4 h-4' : 'w-6 h-6'} object-contain`}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 function TeamDisplay({ team, align }: { team: Match['homeTeam']; align: 'left' | 'right' }) {
   const participant = getParticipant(team?.name ?? null)
   const displayName = team?.shortName || team?.tla || team?.name || 'TBD'
   return (
     <div className={`flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'} gap-1`}>
       <div className={`flex items-center gap-2 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
-        {team?.crest && (
-          <img src={team.crest} alt={displayName} className="w-6 h-6 object-contain" loading="lazy" />
-        )}
+        <TeamCrest team={team} />
         <span className="font-heading text-sm text-white leading-tight">
           {displayName}
         </span>
@@ -32,6 +53,8 @@ function TeamDisplay({ team, align }: { team: Match['homeTeam']; align: 'left' |
     </div>
   )
 }
+
+export { TeamCrest }
 
 export default function MatchCard({
   match,

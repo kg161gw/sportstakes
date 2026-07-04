@@ -8,7 +8,29 @@ import { useUIStore } from '../store/uiStore'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import TeamPanel from '../components/teams/TeamPanel'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
+import { TeamCrest } from '../components/fixtures/MatchCard'
+import { teamFlagEmoji } from '../utils/teamFlags'
 import type { Match, StandingGroup, Scorer, Standing } from '../api/footballApi'
+
+// ── Shared crest + flag emoji fallback ───────────────────────────────
+function CrestOrFlag({ name, crest, className }: { name: string; crest?: string; className?: string }) {
+  const [failed, setFailed] = useState(false)
+  const emoji = teamFlagEmoji(name)
+  if (!crest || failed) {
+    return emoji
+      ? <span className={`flex items-center justify-center leading-none ${className}`}>{emoji}</span>
+      : null
+  }
+  return (
+    <img
+      src={crest}
+      alt={name}
+      className={`object-contain ${className ?? ''}`}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  )
+}
 
 // ── Group Standings ──────────────────────────────────────────────────
 function GroupTable({ group }: { group: StandingGroup }) {
@@ -36,9 +58,7 @@ function GroupTable({ group }: { group: StandingGroup }) {
               <td className="px-3 py-2">
                 <div className="flex items-center gap-2">
                   <span className="text-white/30 w-3 text-right">{row.position}</span>
-                  {row.team.crest && (
-                    <img src={row.team.crest} alt={row.team.name} className="w-4 h-4 object-contain" />
-                  )}
+                  <CrestOrFlag name={row.team.name} crest={row.team.crest} className="w-4 h-4" />
                   <span className={`text-white ${i < 2 ? 'font-medium' : 'text-white/70'}`}>
                     {row.team.shortName || row.team.name}
                   </span>
@@ -89,9 +109,7 @@ function BracketTeamRow({
     <div className={`px-2 py-1.5 ${isHome ? 'border-b border-white/10' : ''}`}>
       <div className="flex items-center justify-between gap-1">
         <div className="flex items-center gap-1.5 min-w-0">
-          {team?.crest && (
-            <img src={team.crest} alt={name} className="w-3.5 h-3.5 object-contain flex-shrink-0" />
-          )}
+          {team && <TeamCrest team={team} size="sm" />}
           <span className={`text-xs font-medium truncate ${hasTbd ? 'text-white/30' : 'text-white'}`}>
             {name}
           </span>
@@ -289,10 +307,7 @@ function ScorerRow({ rank, scorer, sortKey }: {
     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
       <span className="text-white/30 font-heading w-5 text-right text-sm flex-shrink-0">{rank}</span>
       <div className="w-8 h-8 rounded-full bg-pitch-light flex items-center justify-center flex-shrink-0 overflow-hidden">
-        {scorer.team.crest
-          ? <img src={scorer.team.crest} alt={scorer.team.name} className="w-5 h-5 object-contain" />
-          : <span className="text-white/30 text-xs font-heading">{scorer.player.name.charAt(0)}</span>
-        }
+        <CrestOrFlag name={scorer.team.name} crest={scorer.team.crest} className="w-5 h-5" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-white text-sm font-medium truncate">{scorer.player.name}</p>
@@ -336,7 +351,7 @@ function TeamStatRow({ rank, row, sortKey, cleanSheets }: {
     <div className="flex items-center gap-3 px-4 py-2.5 border-b border-white/5 last:border-0">
       <span className="text-white/30 font-heading w-5 text-right text-sm flex-shrink-0">{rank}</span>
       <div className="w-6 h-6 flex-shrink-0">
-        {row.team.crest && <img src={row.team.crest} alt={row.team.name} className="w-full h-full object-contain" />}
+        <CrestOrFlag name={row.team.name} crest={row.team.crest} className="w-6 h-6" />
       </div>
       <p className="text-white text-sm flex-1 min-w-0 truncate">{row.team.shortName || row.team.name}</p>
       <div className="flex gap-3 flex-shrink-0 text-right">
