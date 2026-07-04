@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Match } from '../../api/footballApi'
 import { useMatchDetail } from '../../hooks/useMatches'
@@ -152,51 +152,62 @@ function MatchDetailPanel({ match }: { match: Match }) {
     return null
   }
 
-  // Summary counts
-  const yellowCount = bookings.filter(b => b.card === 'YELLOW').length
-  const redCount = bookings.filter(b => b.card === 'RED' || b.card === 'YELLOW_RED').length
-  const subCount = subs.length
+  // Per-team counts for the stats grid
+  const homeGoals  = goals.filter(g => g.team.id === match.homeTeam.id).length
+  const awayGoals  = goals.filter(g => g.team.id !== match.homeTeam.id).length
+  const homeYellow = bookings.filter(b => b.team.id === match.homeTeam.id && b.card === 'YELLOW').length
+  const awayYellow = bookings.filter(b => b.team.id !== match.homeTeam.id && b.card === 'YELLOW').length
+  const homeRed    = bookings.filter(b => b.team.id === match.homeTeam.id && (b.card === 'RED' || b.card === 'YELLOW_RED')).length
+  const awayRed    = bookings.filter(b => b.team.id !== match.homeTeam.id && (b.card === 'RED' || b.card === 'YELLOW_RED')).length
+  const homeSubs   = subs.filter(s => s.team.id === match.homeTeam.id).length
+  const awaySubs   = subs.filter(s => s.team.id !== match.homeTeam.id).length
+
+  type StatRow = { home: number; icon: ReactNode; label: string; away: number }
+  const statRows: StatRow[] = [
+    { home: homeGoals,  icon: '⚽', label: 'Goals',  away: awayGoals  },
+    { home: homeYellow, icon: <span className="inline-block w-2.5 h-3 rounded-[2px] bg-yellow-400" />, label: 'Yellow', away: awayYellow },
+    { home: homeRed,    icon: <span className="inline-block w-2.5 h-3 rounded-[2px] bg-red-500" />,    label: 'Red',    away: awayRed    },
+    { home: homeSubs,   icon: '⇄',  label: 'Subs',   away: awaySubs   },
+  ].filter(r => r.home > 0 || r.away > 0)
 
   return (
     <div className="px-3 pb-3 space-y-3">
-      {/* Half-time score + summary pill row */}
-      <div className="flex items-center justify-between gap-3 text-xs">
-        {hasHT ? (
-          <div className="flex items-center gap-1.5 text-white/40">
-            <span>HT</span>
-            <span className="font-heading text-white/60">{htHome}–{htAway}</span>
+      {/* Centred half-time score */}
+      {hasHT && (
+        <div className="flex items-center justify-center gap-2 text-xs text-white/40">
+          <span>Half-time</span>
+          <span className="font-heading text-white/60">{htHome} – {htAway}</span>
+        </div>
+      )}
+
+      {/* Team-vs-team stat grid */}
+      {statRows.length > 0 && (
+        <>
+          <div className="border-t border-white/5" />
+          <div className="space-y-1.5">
+            {statRows.map((row, i) => (
+              <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 text-xs">
+                <span className={`text-right font-heading ${row.home > row.away ? 'text-white' : 'text-white/40'}`}>
+                  {row.home}
+                </span>
+                <div className="flex flex-col items-center gap-0.5 w-16">
+                  <span className="text-white/30">{row.icon}</span>
+                  <span className="text-[9px] text-white/20 uppercase tracking-wider">{row.label}</span>
+                </div>
+                <span className={`text-left font-heading ${row.away > row.home ? 'text-white' : 'text-white/40'}`}>
+                  {row.away}
+                </span>
+              </div>
+            ))}
           </div>
-        ) : <div />}
-        {hasEvents && (
-          <div className="flex items-center gap-3 text-white/30">
-            {goals.length > 0 && (
-              <span>⚽ {goals.length}</span>
-            )}
-            {yellowCount > 0 && (
-              <span className="flex items-center gap-0.5">
-                <span className="inline-block w-2 h-2.5 rounded-[1px] bg-yellow-400" />
-                {yellowCount}
-              </span>
-            )}
-            {redCount > 0 && (
-              <span className="flex items-center gap-0.5">
-                <span className="inline-block w-2 h-2.5 rounded-[1px] bg-red-500" />
-                {redCount}
-              </span>
-            )}
-            {subCount > 0 && (
-              <span>⇄ {subCount}</span>
-            )}
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Events two-column */}
       {hasEvents && (
         <>
           <div className="border-t border-white/5" />
-          {/* Column headers */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-1 mb-1">
             <p className="text-[10px] text-white/20 uppercase tracking-wider">{match.homeTeam.shortName || match.homeTeam.tla}</p>
             <p className="text-[10px] text-white/20 uppercase tracking-wider text-right">{match.awayTeam.shortName || match.awayTeam.tla}</p>
           </div>
