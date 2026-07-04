@@ -5,22 +5,12 @@ import SweepstakeGrid from '../components/sweepstake/SweepstakeGrid'
 import { useMatches, useTodayMatches, useLiveMatches } from '../hooks/useMatches'
 import MatchCard from '../components/fixtures/MatchCard'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
-import { useTeams } from '../hooks/useTeams'
-import { useUIStore } from '../store/uiStore'
-import TeamPanel from '../components/teams/TeamPanel'
 
 export default function HomePage() {
   const { isLoading } = useMatches()
-  const { data: teams = [] } = useTeams()
   const liveMatches = useLiveMatches()
   const todayMatches = useTodayMatches()
-  const { selectedTeamId, setSelectedTeam } = useUIStore()
   const [tab, setTab] = useState(liveMatches.length > 0 ? 'live' : 'sweepstake')
-
-  function handleTeamClick(name: string) {
-    const team = teams.find(t => t.name.toLowerCase() === name.toLowerCase())
-    if (team) setSelectedTeam(team.id)
-  }
 
   const tabs = [
     { id: 'sweepstake', label: 'Sweepstake' },
@@ -38,7 +28,7 @@ export default function HomePage() {
       <SlidingTabs tabs={tabs} active={tab} onChange={setTab} />
 
       {tab === 'sweepstake' && (
-        <SweepstakeGrid onTeamClick={handleTeamClick} />
+        <SweepstakeGrid />
       )}
 
       {tab === 'today' && (
@@ -65,8 +55,6 @@ export default function HomePage() {
           )}
         </div>
       )}
-
-      <TeamPanel teamId={selectedTeamId} onClose={() => setSelectedTeam(null)} />
     </PageWrapper>
   )
 }

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { footballApi } from '../api/footballApi'
+import { footballApi, type Scorer } from '../api/footballApi'
 import { qk } from '../api/queryKeys'
 
 export function useTeams() {
@@ -26,5 +26,14 @@ export function useTeamMatches(id: number | null) {
     queryFn: () => footballApi.teamMatches(id!),
     select: d => d.matches,
     enabled: id !== null,
+  })
+}
+
+export function useScorers() {
+  return useQuery({
+    queryKey: ['wc', 'scorers'],
+    queryFn: footballApi.scorers,
+    select: (d: { scorers: Scorer[] }) => d.scorers,
+    staleTime: 5 * 60_000,
   })
 }

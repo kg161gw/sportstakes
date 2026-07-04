@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage'
 import FixturesPage from './pages/FixturesPage'
 import TeamsPage from './pages/TeamsPage'
 import LivePage from './pages/LivePage'
+import TeamDetailPage from './pages/TeamDetailPage'
 
 export default function App() {
   const location = useLocation()
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/fixtures" element={<FixturesPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/live" element={<LivePage />} />
+          <Route path="/teams/:id" element={<TeamDetailPage />} />
         </Routes>
       </AnimatePresence>
     </AppShell>

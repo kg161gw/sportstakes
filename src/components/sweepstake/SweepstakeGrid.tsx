@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import sweepstake from '../../data/sweepstake.json'
 import { useTeams } from '../../hooks/useTeams'
@@ -6,7 +7,7 @@ function getCrest(teamName: string, teams: { name: string; crest: string }[]): s
   return teams.find(t => t.name.toLowerCase() === teamName.toLowerCase())?.crest ?? null
 }
 
-export default function SweepstakeGrid({ onTeamClick }: { onTeamClick: (name: string) => void }) {
+export default function SweepstakeGrid() {
   const { data: teams = [] } = useTeams()
 
   return (
@@ -25,17 +26,21 @@ export default function SweepstakeGrid({ onTeamClick }: { onTeamClick: (name: st
             <div className="flex flex-wrap gap-2">
               {p.teams.map(teamName => {
                 const crest = getCrest(teamName, teams)
-                return (
-                  <button
-                    key={teamName}
-                    onClick={() => onTeamClick(teamName)}
-                    className="flex items-center gap-2 bg-pitch rounded-lg px-3 py-2 hover:bg-pitch-light transition-colors"
-                  >
+                const team = teams.find(t => t.name.toLowerCase() === teamName.toLowerCase())
+                const inner = (
+                  <div className="flex items-center gap-2 bg-pitch rounded-lg px-3 py-2 hover:bg-pitch-light transition-colors">
                     {crest && (
                       <img src={crest} alt={teamName} className="w-6 h-6 object-contain" />
                     )}
                     <span className="text-sm text-white font-medium">{teamName}</span>
-                  </button>
+                  </div>
+                )
+                return team ? (
+                  <Link key={teamName} to={`/teams/${team.id}`}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <span key={teamName}>{inner}</span>
                 )
               })}
             </div>

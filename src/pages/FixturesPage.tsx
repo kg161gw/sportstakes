@@ -129,7 +129,8 @@ function BracketView({ matches }: { matches: Match[] }) {
   }
 
   return (
-    <div className="overflow-x-auto scrollbar-none pb-4">
+    <div className="w-full overflow-hidden rounded-xl bg-pitch-mid border border-white/10 p-3">
+      <div className="overflow-x-auto scrollbar-none pb-2">
       <div className="flex gap-6 min-w-max">
         {rounds
           .filter(r => byRound[r]?.length)
@@ -154,6 +155,7 @@ function BracketView({ matches }: { matches: Match[] }) {
               </div>
             </div>
           ))}
+      </div>
       </div>
     </div>
   )

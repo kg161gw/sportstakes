@@ -2,16 +2,13 @@ import { useState } from 'react'
 import PageWrapper from '../components/shared/PageWrapper'
 import SlidingTabs from '../components/shared/SlidingTabs'
 import { useTeams } from '../hooks/useTeams'
-import { useUIStore } from '../store/uiStore'
 import TeamCard from '../components/teams/TeamCard'
-import TeamPanel from '../components/teams/TeamPanel'
 import { SkeletonCard } from '../components/shared/LoadingSkeleton'
 
 const CONFS = ['All', 'UEFA', 'CONMEBOL', 'CONCACAF', 'CAF', 'AFC', 'OFC']
 
 export default function TeamsPage() {
   const { data: teams = [], isLoading } = useTeams()
-  const { selectedTeamId, setSelectedTeam } = useUIStore()
   const [search, setSearch] = useState('')
   const [conf, setConf] = useState('All')
 
@@ -52,12 +49,10 @@ export default function TeamsPage() {
       ) : (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
           {filtered.map((team, i) => (
-            <TeamCard key={team.id} team={team} index={i} onClick={() => setSelectedTeam(team.id)} />
+            <TeamCard key={team.id} team={team} index={i} />
           ))}
         </div>
       )}
-
-      <TeamPanel teamId={selectedTeamId} onClose={() => setSelectedTeam(null)} />
     </PageWrapper>
   )
 }

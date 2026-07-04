@@ -17,7 +17,7 @@ export interface Team {
   tla: string
   crest: string
   area: { name: string; flag: string }
-  coach?: { name: string; nationality: string }
+  coach?: { name: string; nationality: string; dateOfBirth?: string }
   squad?: Player[]
 }
 
@@ -66,10 +66,29 @@ export interface StandingGroup {
   table: Standing[]
 }
 
+export interface Scorer {
+  player: {
+    id: number
+    name: string
+    firstName: string
+    lastName: string
+    dateOfBirth: string
+    nationality: string
+    position: string | null
+    section: string
+  }
+  team: { id: number; name: string; shortName: string; tla: string; crest: string }
+  playedMatches: number
+  goals: number
+  assists: number | null
+  penalties: number | null
+}
+
 export const footballApi = {
   matches: () => apiFetch<{ matches: Match[] }>('/competitions/WC/matches'),
   standings: () => apiFetch<{ standings: StandingGroup[] }>('/competitions/WC/standings'),
   teams: () => apiFetch<{ teams: Team[] }>('/competitions/WC/teams'),
   team: (id: number) => apiFetch<Team>(`/teams/${id}`),
   teamMatches: (id: number) => apiFetch<{ matches: Match[] }>(`/teams/${id}/matches?competitions=WC`),
+  scorers: () => apiFetch<{ scorers: Scorer[] }>('/competitions/WC/scorers?limit=100'),
 }
