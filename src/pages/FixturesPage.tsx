@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import PageWrapper from '../components/shared/PageWrapper'
 import SlidingTabs from '../components/shared/SlidingTabs'
 import { useMatches } from '../hooks/useMatches'
@@ -221,12 +221,23 @@ function ScheduleView({ matches }: { matches: Match[] }) {
           }),
   }))
 
+  const scrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const container = scrollRef.current
+    if (!container) return
+    const active = container.querySelector<HTMLElement>('[data-active="true"]')
+    if (!active) return
+    active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [activeDate])
+
   return (
     <div>
-      <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-4">
+      <div ref={scrollRef} className="flex gap-2 overflow-x-auto scrollbar-none pb-2 mb-4">
         {dateTabs.map(dt => (
           <button
             key={dt.id}
+            data-active={activeDate === dt.id ? 'true' : undefined}
             onClick={() => setActiveDate(dt.id)}
             className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               activeDate === dt.id
