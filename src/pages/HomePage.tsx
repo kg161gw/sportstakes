@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import PageWrapper from '../components/shared/PageWrapper'
+import SlidingTabs from '../components/shared/SlidingTabs'
 import SweepstakeGrid from '../components/sweepstake/SweepstakeGrid'
 import { useMatches, useTodayMatches, useLiveMatches } from '../hooks/useMatches'
 import MatchCard from '../components/fixtures/MatchCard'
@@ -13,43 +15,55 @@ export default function HomePage() {
   const liveMatches = useLiveMatches()
   const todayMatches = useTodayMatches()
   const { selectedTeamId, setSelectedTeam } = useUIStore()
+  const [tab, setTab] = useState(liveMatches.length > 0 ? 'live' : 'sweepstake')
 
   function handleTeamClick(name: string) {
     const team = teams.find(t => t.name.toLowerCase() === name.toLowerCase())
     if (team) setSelectedTeam(team.id)
   }
 
+  const tabs = [
+    { id: 'sweepstake', label: 'Sweepstake' },
+    { id: 'today', label: "Today's Matches", count: todayMatches.length },
+    { id: 'live', label: 'Live', count: liveMatches.length },
+  ]
+
   return (
     <PageWrapper>
-      {/* Live banner */}
-      {liveMatches.length > 0 && (
-        <div className="mb-6 rounded-xl border border-live/40 bg-live/10 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-2 h-2 rounded-full bg-live animate-pulse-live" />
-            <span className="font-heading text-live tracking-wider text-sm">LIVE NOW</span>
-          </div>
-          <div className="space-y-2">
-            {liveMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
-          </div>
+      <div className="flex items-center gap-3 mb-4">
+        <span className="font-heading text-2xl text-gold">SPORTSTAKES</span>
+        <span className="text-white/30 text-sm">World Cup 2026</span>
+      </div>
+
+      <SlidingTabs tabs={tabs} active={tab} onChange={setTab} />
+
+      {tab === 'sweepstake' && (
+        <SweepstakeGrid onTeamClick={handleTeamClick} />
+      )}
+
+      {tab === 'today' && (
+        <div className="space-y-2">
+          {isLoading ? (
+            [1, 2, 3].map(i => <MatchCardSkeleton key={i} />)
+          ) : todayMatches.length === 0 ? (
+            <div className="text-center py-12 text-white/30">No matches today</div>
+          ) : (
+            todayMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)
+          )}
         </div>
       )}
 
-      <SweepstakeGrid onTeamClick={handleTeamClick} />
-
-      {/* Today's matches */}
-      {todayMatches.length > 0 && (
-        <section className="mt-8">
-          <h2 className="font-heading text-xl text-gold mb-4 uppercase tracking-wide">📅 Today's Matches</h2>
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => <MatchCardSkeleton key={i} />)}
+      {tab === 'live' && (
+        <div className="space-y-2">
+          {liveMatches.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-4xl mb-3">⚽</p>
+              <p className="text-white/40">No matches live right now</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {todayMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
-            </div>
+            liveMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)
           )}
-        </section>
+        </div>
       )}
 
       <TeamPanel teamId={selectedTeamId} onClose={() => setSelectedTeam(null)} />

@@ -28,17 +28,17 @@ export default function TeamCard({
       whileHover={{ scale: 1.04, y: -2 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className="bg-pitch-mid rounded-xl p-4 border border-white/5 hover:border-gold/30 transition-colors text-left w-full flex flex-col items-center gap-3 cursor-pointer"
+      className="bg-pitch-mid rounded-xl p-2.5 border border-white/5 hover:border-gold/30 transition-colors text-left w-full flex flex-col items-center gap-2 cursor-pointer"
     >
       {team.crest ? (
-        <img src={team.crest} alt={team.name} className="w-12 h-12 object-contain" loading="lazy" />
+        <img src={team.crest} alt={team.name} className="w-10 h-10 object-contain" loading="lazy" />
       ) : (
-        <div className="w-12 h-12 rounded-full bg-pitch-light flex items-center justify-center text-lg font-heading">
+        <div className="w-10 h-10 rounded-full bg-pitch-light flex items-center justify-center text-base font-heading">
           {team.tla}
         </div>
       )}
       <div className="text-center">
-        <p className="font-heading text-sm text-white leading-tight">{team.shortName || team.name}</p>
+        <p className="font-heading text-xs text-white leading-tight">{team.shortName || team.name}</p>
         <p className="text-xs text-white/40 mt-0.5">{team.area?.name}</p>
       </div>
       {participant && (

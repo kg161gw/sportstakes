@@ -14,10 +14,10 @@ export default function NavBar() {
   const hasLive = liveMatches.length > 0
 
   return (
-    <nav className="hidden md:flex items-center justify-between px-6 py-4 border-b border-white/10 bg-pitch/80 backdrop-blur sticky top-0 z-50">
-      <div className="flex items-center gap-2">
-        <span className="text-2xl">⚽</span>
-        <span className="font-heading text-xl text-gold">SPORTSTAKES</span>
+    <nav className="hidden md:flex items-center justify-between px-6 py-3 border-b border-white/10 bg-pitch/90 backdrop-blur sticky top-0 z-50">
+      <div className="flex items-center gap-3">
+        <span className="font-heading text-xl text-gold tracking-wide">SPORTSTAKES</span>
+        <span className="text-white/30 text-xs">World Cup 2026</span>
       </div>
       <div className="flex items-center gap-1">
         {links.map(link => (

@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --color-pitch: #0d2818;
-  --color-pitch-mid: #1a472a;
-  --color-pitch-light: #2d6a4f;
+  --color-pitch: #111827;
+  --color-pitch-mid: #1f2937;
+  --color-pitch-light: #374151;
   --color-gold: #FFD700;
   --color-gold-dim: #b8960c;
   --color-win: #22c55e;
@@ -25,21 +25,15 @@ body {
 
 .font-heading { font-family: var(--font-heading); }
 
-/* Grass stripe texture */
-.grass-bg {
-  background-image: repeating-linear-gradient(
-    180deg,
-    transparent,
-    transparent 40px,
-    rgba(255,255,255,0.015) 40px,
-    rgba(255,255,255,0.015) 80px
-  );
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
+.scrollbar-none::-webkit-scrollbar { display: none; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--color-pitch); }
-::-webkit-scrollbar-thumb { background: var(--color-pitch-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--color-pitch-light); border-radius: 2px; }
 
 @keyframes pulse-live {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -52,7 +46,7 @@ body {
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #1a472a 25%, #2d6a4f 50%, #1a472a 75%);
+  background: linear-gradient(90deg, #1f2937 25%, #374151 50%, #1f2937 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

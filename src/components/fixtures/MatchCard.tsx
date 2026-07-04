@@ -20,9 +20,9 @@ function TeamDisplay({ team, align }: { team: Match['homeTeam']; align: 'left' |
     <div className={`flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'} gap-1`}>
       <div className={`flex items-center gap-2 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
         {team?.crest && (
-          <img src={team.crest} alt={displayName} className="w-8 h-8 object-contain" loading="lazy" />
+          <img src={team.crest} alt={displayName} className="w-6 h-6 object-contain" loading="lazy" />
         )}
-        <span className="font-heading text-sm md:text-base text-white leading-tight">
+        <span className="font-heading text-sm text-white leading-tight">
           {displayName}
         </span>
       </div>
@@ -44,13 +44,13 @@ export default function MatchCard({ match, index = 0 }: { match: Match; index?: 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.25 }}
-      className={`rounded-xl p-4 border transition-all ${
+      className={`rounded-xl p-3 border transition-all ${
         isLive
           ? 'bg-pitch-mid border-live/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
           : 'bg-pitch-mid border-white/5 hover:border-white/20'
       }`}
     >
-      <div className="flex items-center justify-between mb-3 text-xs text-white/40">
+      <div className="flex items-center justify-between mb-2 text-[11px] text-white/40">
         <span>{matchDate} · {matchTime}</span>
         <span className="uppercase tracking-wider">{match.stage?.replace(/_/g, ' ')}</span>
       </div>
