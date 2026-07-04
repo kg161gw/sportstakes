@@ -90,8 +90,20 @@ import sweepstake from '../data/sweepstake.json'
 function getParticipant(teamName: string | null | undefined): string | null {
   if (!teamName) return null
   const needle = normaliseTeamName(teamName)
-  const p = sweepstake.participants.find(p =>
+
+  // 1. Exact normalised match
+  let p = sweepstake.participants.find(p =>
     p.teams.some(t => normaliseTeamName(t) === needle)
+  )
+  if (p) return p.name
+
+  // 2. One name contains the other (handles "Bosnia and Herzegovina" ↔ "Bosnia Herzegovina",
+  //    "Cabo Verde" ↔ "Cape Verde Islands", etc.)
+  p = sweepstake.participants.find(p =>
+    p.teams.some(t => {
+      const tn = normaliseTeamName(t)
+      return needle.includes(tn) || tn.includes(needle)
+    })
   )
   return p?.name ?? null
 }

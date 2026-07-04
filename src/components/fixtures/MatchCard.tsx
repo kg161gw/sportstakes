@@ -10,8 +10,19 @@ import { teamFlagUrl, teamFlagEmoji, normaliseTeamName } from '../../utils/teamF
 function getParticipant(teamName: string | null): string | null {
   if (!teamName) return null
   const needle = normaliseTeamName(teamName)
-  const p = sweepstake.participants.find(p =>
+
+  // 1. Exact normalised match
+  let p = sweepstake.participants.find(p =>
     p.teams.some(t => normaliseTeamName(t) === needle)
+  )
+  if (p) return p.name
+
+  // 2. One name contains the other
+  p = sweepstake.participants.find(p =>
+    p.teams.some(t => {
+      const tn = normaliseTeamName(t)
+      return needle.includes(tn) || tn.includes(needle)
+    })
   )
   return p?.name ?? null
 }
