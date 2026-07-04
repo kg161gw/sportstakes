@@ -17,15 +17,21 @@ jobs:
 
       - run: npm ci
 
+      - name: Install functions dependencies
+        run: npm ci
+        working-directory: functions
+
       - name: Build
         run: npm run build
-        env:
-          VITE_API_KEY: ${{ github.ref == 'refs/heads/main' && secrets.VITE_API_KEY_PROD || secrets.VITE_API_KEY_STAGING }}
 
       - name: Deploy staging
         if: github.ref == 'refs/heads/develop'
-        run: npx firebase-tools deploy --only hosting --project sportstakes-staging --token ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          echo "FOOTBALL_API_KEY=${{ secrets.VITE_API_KEY_STAGING }}" > functions/.env
+          npx firebase-tools deploy --only hosting,functions --project sportstakes-staging --token ${{ secrets.FIREBASE_TOKEN }}
 
       - name: Deploy production
         if: github.ref == 'refs/heads/main'
-        run: npx firebase-tools deploy --only hosting --project sportstakes-prod --token ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          echo "FOOTBALL_API_KEY=${{ secrets.VITE_API_KEY_PROD }}" > functions/.env
+          npx firebase-tools deploy --only hosting,functions --project sportstakes-prod --token ${{ secrets.FIREBASE_TOKEN }}
