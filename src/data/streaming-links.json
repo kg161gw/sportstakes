@@ -3,9 +3,9 @@
     {
       "label": "UK Television",
       "services": [
-        { "name": "BBC iPlayer", "description": "Live & on-demand coverage", "url": "https://www.bbc.co.uk/iplayer/guide/sport", "logo": "📺", "badge": "FREE" },
-        { "name": "ITV X", "description": "ITV World Cup matches live", "url": "https://www.itv.com/itvx/", "logo": "📺", "badge": "FREE" },
-        { "name": "Sky Sports", "description": "Full tournament coverage", "url": "https://www.skysports.com/watch-sky-sports", "logo": "📡", "badge": "SUB" }
+        { "name": "BBC iPlayer", "description": "Live & on-demand BBC coverage", "url": "https://www.bbc.co.uk/sport/football/world-cup", "logo": "📺", "badge": "FREE" },
+        { "name": "ITVX", "description": "ITV World Cup matches live & free", "url": "https://www.itvx.com/sport", "logo": "📺", "badge": "FREE" },
+        { "name": "Sky Sports", "description": "Full tournament coverage", "url": "https://www.skysports.com/football/world-cup", "logo": "📡", "badge": "SUB" }
       ]
     },
     {
