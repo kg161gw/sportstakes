@@ -5,7 +5,8 @@ import ScoreBadge from './ScoreBadge'
 import CountdownTimer from '../shared/CountdownTimer'
 import sweepstake from '../../data/sweepstake.json'
 
-function getParticipant(teamName: string): string | null {
+function getParticipant(teamName: string | null): string | null {
+  if (!teamName) return null
   const p = sweepstake.participants.find(p =>
     p.teams.some(t => t.toLowerCase() === teamName.toLowerCase())
   )
@@ -13,15 +14,16 @@ function getParticipant(teamName: string): string | null {
 }
 
 function TeamDisplay({ team, align }: { team: Match['homeTeam']; align: 'left' | 'right' }) {
-  const participant = getParticipant(team.name)
+  const participant = getParticipant(team?.name ?? null)
+  const displayName = team?.shortName || team?.tla || team?.name || 'TBD'
   return (
     <div className={`flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'} gap-1`}>
       <div className={`flex items-center gap-2 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
-        {team.crest && (
-          <img src={team.crest} alt={team.name} className="w-8 h-8 object-contain" loading="lazy" />
+        {team?.crest && (
+          <img src={team.crest} alt={displayName} className="w-8 h-8 object-contain" loading="lazy" />
         )}
         <span className="font-heading text-sm md:text-base text-white leading-tight">
-          {team.shortName || team.tla}
+          {displayName}
         </span>
       </div>
       {participant && (
