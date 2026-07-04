@@ -7,7 +7,9 @@ export function useStandings() {
     queryKey: qk.standings(),
     queryFn: footballApi.standings,
     select: d => d.standings,
-    staleTime: 2 * 60_000,
-    refetchInterval: 60_000,
+    staleTime: 10 * 60_000,   // standings don't change mid-match
+    refetchInterval: 15 * 60_000,
+    retry: 3,
+    retryDelay: attempt => Math.min(1000 * 2 ** attempt, 30_000),
   })
 }
