@@ -21,12 +21,21 @@ jobs:
         run: npm ci
         working-directory: functions
 
-      - name: Build
+      - name: Build (staging) — API key in bundle, no Cloud Function needed
+        if: github.ref == 'refs/heads/develop'
+        run: npm run build
+        env:
+          VITE_API_KEY: ${{ secrets.VITE_API_KEY_STAGING }}
+
+      - name: Build (production) — no API key in bundle, Cloud Function proxy used
+        if: github.ref == 'refs/heads/main'
         run: npm run build
 
       - name: Deploy staging
         if: github.ref == 'refs/heads/develop'
-        run: npx firebase-tools deploy --only hosting --project sportstakes-staging --token ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          node -e "const fs=require('fs');const f=JSON.parse(fs.readFileSync('firebase.json'));f.hosting.rewrites=f.hosting.rewrites.filter(r=>!r.function);fs.writeFileSync('firebase.json',JSON.stringify(f,null,2))"
+          npx firebase-tools deploy --only hosting --project sportstakes-staging --token ${{ secrets.FIREBASE_TOKEN }}
 
       - name: Deploy production
         if: github.ref == 'refs/heads/main'

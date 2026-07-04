@@ -1,11 +1,12 @@
-// All requests go through /api/football
-// Dev: Vite proxy injects the API key server-side
-// Prod: Firebase Cloud Function injects the API key server-side
-// The API key never appears in the browser bundle
-const BASE = '/api/football'
+// If VITE_API_KEY is set at build time (dev + staging): call API directly with key in header
+// If not set (production): use /api/football Cloud Function proxy (key stays server-side)
+const API_KEY = import.meta.env.VITE_API_KEY as string | undefined
+const BASE = API_KEY ? 'https://api.football-data.org/v4' : '/api/football'
 
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`)
+  const res = await fetch(`${BASE}${path}`, {
+    headers: API_KEY ? { 'X-Auth-Token': API_KEY } : {},
+  })
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`)
   return res.json() as Promise<T>
 }
