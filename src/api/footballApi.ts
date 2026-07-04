@@ -61,6 +61,7 @@ export interface Standing {
 
 export interface StandingGroup {
   stage: string
+  type: string
   group: string
   table: Standing[]
 }
