@@ -3,7 +3,7 @@ import PageWrapper from '../components/shared/PageWrapper'
 import StreamCard from '../components/live/StreamCard'
 import streamingData from '../data/streaming-links.json'
 import { useLiveMatches } from '../hooks/useMatches'
-import MatchCard from '../components/fixtures/MatchCard'
+import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 
 export default function LivePage() {
   const liveMatches = useLiveMatches()
@@ -21,7 +21,7 @@ export default function LivePage() {
             <span className="font-heading text-live tracking-wider text-sm">LIVE NOW</span>
           </div>
           <div className="space-y-2">
-            {liveMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)}
+            {liveMatches.map((m, i) => <ExpandableMatchCard key={m.id} match={m} index={i} />)}
           </div>
         </section>
       )}

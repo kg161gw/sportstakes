@@ -3,7 +3,7 @@ import PageWrapper from '../components/shared/PageWrapper'
 import SlidingTabs from '../components/shared/SlidingTabs'
 import SweepstakeGrid from '../components/sweepstake/SweepstakeGrid'
 import { useMatches, useTodayMatches, useLiveMatches } from '../hooks/useMatches'
-import MatchCard from '../components/fixtures/MatchCard'
+import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
 
 export default function HomePage() {
@@ -38,7 +38,7 @@ export default function HomePage() {
           ) : todayMatches.length === 0 ? (
             <div className="text-center py-12 text-white/30">No matches today</div>
           ) : (
-            todayMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)
+            todayMatches.map((m, i) => <ExpandableMatchCard key={m.id} match={m} index={i} />)
           )}
         </div>
       )}
@@ -51,7 +51,7 @@ export default function HomePage() {
               <p className="text-white/40">No matches live right now</p>
             </div>
           ) : (
-            liveMatches.map((m, i) => <MatchCard key={m.id} match={m} index={i} />)
+            liveMatches.map((m, i) => <ExpandableMatchCard key={m.id} match={m} index={i} />)
           )}
         </div>
       )}

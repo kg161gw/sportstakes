@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import type { Match } from '../../api/footballApi'
 import type { AfTeamStats, AfEvent } from '../../api/apiFootballApi'
@@ -242,15 +243,11 @@ function MatchDetailPanel({ match }: { match: Match }) {
 export default function ExpandableMatchCard({
   match,
   index = 0,
-  expandedId,
-  onToggle,
 }: {
   match: Match
   index?: number
-  expandedId: number | null
-  onToggle: (id: number) => void
 }) {
-  const isExpanded = expandedId === match.id
+  const [isExpanded, setIsExpanded] = useState(false)
   const canExpand = match.status === 'FINISHED' || match.status === 'IN_PLAY' || match.status === 'PAUSED'
 
   return (
@@ -261,7 +258,7 @@ export default function ExpandableMatchCard({
     >
       {/* The card itself — clickable if there's something to expand */}
       <div
-        onClick={() => canExpand && onToggle(match.id)}
+        onClick={() => canExpand && setIsExpanded(v => !v)}
         className={canExpand ? 'cursor-pointer' : ''}
       >
         <MatchCard match={match} index={index} embedded />

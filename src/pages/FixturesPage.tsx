@@ -4,7 +4,7 @@ import SlidingTabs from '../components/shared/SlidingTabs'
 import { useMatches } from '../hooks/useMatches'
 import { useStandings } from '../hooks/useStandings'
 import { useUIStore } from '../store/uiStore'
-import MatchCard from '../components/fixtures/MatchCard'
+import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import TeamPanel from '../components/teams/TeamPanel'
 import { MatchCardSkeleton } from '../components/shared/LoadingSkeleton'
 import type { Match, StandingGroup } from '../api/footballApi'
@@ -251,7 +251,7 @@ function ScheduleView({ matches }: { matches: Match[] }) {
       </div>
       <div className="space-y-2">
         {(byDate[activeDate] ?? []).map((m, i) => (
-          <MatchCard key={m.id} match={m} index={i} />
+          <ExpandableMatchCard key={m.id} match={m} index={i} />
         ))}
       </div>
     </div>

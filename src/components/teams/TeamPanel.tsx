@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTeamDetail, useTeamMatches } from '../../hooks/useTeams'
 import { SkeletonCard, SkeletonText } from '../shared/LoadingSkeleton'
-import MatchCard from '../fixtures/MatchCard'
+import ExpandableMatchCard from '../fixtures/ExpandableMatchCard'
 
 const positions = ['Goalkeeper', 'Defence', 'Midfield', 'Offence']
 
@@ -103,7 +103,7 @@ export default function TeamPanel({
                       </h3>
                       <div className="space-y-2">
                         {recentMatches.map((m, i) => (
-                          <MatchCard key={m.id} match={m} index={i} />
+                          <ExpandableMatchCard key={m.id} match={m} index={i} />
                         ))}
                       </div>
                     </section>
