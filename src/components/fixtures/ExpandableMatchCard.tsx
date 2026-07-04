@@ -152,20 +152,54 @@ function MatchDetailPanel({ match }: { match: Match }) {
     return null
   }
 
+  // Summary counts
+  const yellowCount = bookings.filter(b => b.card === 'YELLOW').length
+  const redCount = bookings.filter(b => b.card === 'RED' || b.card === 'YELLOW_RED').length
+  const subCount = subs.length
+
   return (
     <div className="px-3 pb-3 space-y-3">
-      {/* Half-time score */}
-      {hasHT && (
-        <div className="flex items-center justify-center gap-2 text-xs text-white/40">
-          <span>Half-time:</span>
-          <span className="font-heading text-white/60">{htHome} – {htAway}</span>
-        </div>
-      )}
+      {/* Half-time score + summary pill row */}
+      <div className="flex items-center justify-between gap-3 text-xs">
+        {hasHT ? (
+          <div className="flex items-center gap-1.5 text-white/40">
+            <span>HT</span>
+            <span className="font-heading text-white/60">{htHome}–{htAway}</span>
+          </div>
+        ) : <div />}
+        {hasEvents && (
+          <div className="flex items-center gap-3 text-white/30">
+            {goals.length > 0 && (
+              <span>⚽ {goals.length}</span>
+            )}
+            {yellowCount > 0 && (
+              <span className="flex items-center gap-0.5">
+                <span className="inline-block w-2 h-2.5 rounded-[1px] bg-yellow-400" />
+                {yellowCount}
+              </span>
+            )}
+            {redCount > 0 && (
+              <span className="flex items-center gap-0.5">
+                <span className="inline-block w-2 h-2.5 rounded-[1px] bg-red-500" />
+                {redCount}
+              </span>
+            )}
+            {subCount > 0 && (
+              <span>⇄ {subCount}</span>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Events two-column */}
       {hasEvents && (
         <>
           <div className="border-t border-white/5" />
+          {/* Column headers */}
+          <div className="grid grid-cols-2 gap-3">
+            <p className="text-[10px] text-white/20 uppercase tracking-wider">{match.homeTeam.shortName || match.homeTeam.tla}</p>
+            <p className="text-[10px] text-white/20 uppercase tracking-wider text-right">{match.awayTeam.shortName || match.awayTeam.tla}</p>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               {homeEvents.map((ev, i) => renderEvent(ev, 'home', i))}

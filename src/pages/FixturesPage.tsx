@@ -115,21 +115,29 @@ function BracketMatch({
   matchNum?: string
 }) {
   const finished = match.status === 'FINISHED'
+  const inPlay = match.status === 'IN_PLAY' || match.status === 'PAUSED'
+  const date = new Date(match.utcDate)
+  const dateLabel = date.toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })
+  const timeLabel = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
   return (
-    <div className="bg-pitch-light border border-white/10 rounded-lg overflow-hidden w-40 shrink-0">
-      {matchNum && (
-        <div className="px-2 py-0.5 bg-white/5 text-white/30 text-[10px] font-heading tracking-wider">
-          {matchNum}
-        </div>
-      )}
+    <div className="bg-pitch-light border border-white/10 rounded-lg overflow-hidden w-44 shrink-0">
+      <div className="px-2 py-0.5 bg-white/5 flex items-center justify-between gap-1">
+        <span className="text-white/30 text-[10px] font-heading tracking-wider">
+          {matchNum ?? ''}
+        </span>
+        <span className={`text-[10px] ${inPlay ? 'text-live' : 'text-white/25'}`}>
+          {inPlay ? 'LIVE' : finished ? dateLabel : `${dateLabel} · ${timeLabel}`}
+        </span>
+      </div>
       <BracketTeamRow
         team={match.homeTeam}
-        score={finished ? match.score.fullTime.home : null}
+        score={finished || inPlay ? match.score.fullTime.home : null}
         isHome
       />
       <BracketTeamRow
         team={match.awayTeam}
-        score={finished ? match.score.fullTime.away : null}
+        score={finished || inPlay ? match.score.fullTime.away : null}
         isHome={false}
       />
     </div>

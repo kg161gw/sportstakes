@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTeamDetail, useTeamMatches } from '../../hooks/useTeams'
+import { useTeamDetail, useTeamMatches, useScorers } from '../../hooks/useTeams'
 import { SkeletonCard, SkeletonText } from '../shared/LoadingSkeleton'
 import ExpandableMatchCard from '../fixtures/ExpandableMatchCard'
+import type { Scorer } from '../../api/footballApi'
 
 const positions = ['Goalkeeper', 'Defence', 'Midfield', 'Offence']
 
@@ -11,6 +12,16 @@ function groupByPosition(squad: { name: string; position: string; nationality: s
   for (const p of squad) {
     const key = p.position || 'Unknown'
     ;(map[key] ??= []).push(p)
+  }
+  return map
+}
+
+// Build a name-normalised scorer lookup for fast cross-reference
+function buildScorerMap(scorers: Scorer[]): Map<string, Scorer> {
+  const map = new Map<string, Scorer>()
+  for (const s of scorers) {
+    map.set(s.player.name.toLowerCase(), s)
+    if (s.player.lastName) map.set(s.player.lastName.toLowerCase(), s)
   }
   return map
 }
@@ -24,6 +35,7 @@ export default function TeamPanel({
 }) {
   const { data: team, isLoading } = useTeamDetail(teamId)
   const { data: matches = [] } = useTeamMatches(teamId)
+  const { data: scorers = [] } = useScorers()
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -33,6 +45,9 @@ export default function TeamPanel({
 
   const recentMatches = matches.slice(-5)
   const grouped = team?.squad ? groupByPosition(team.squad) : {}
+  // Only include scorers for this team
+  const teamScorers = scorers.filter(s => s.team.id === teamId)
+  const scorerMap = buildScorerMap(teamScorers)
 
   return (
     <AnimatePresence>
@@ -120,15 +135,42 @@ export default function TeamPanel({
                           <div key={pos}>
                             <p className="text-xs text-white/30 uppercase tracking-wider mb-2">{pos}</p>
                             <div className="space-y-1">
-                              {grouped[pos].map(player => (
-                                <div
-                                  key={player.name}
-                                  className="flex items-center justify-between bg-pitch rounded-lg px-3 py-2"
-                                >
-                                  <span className="text-sm text-white">{player.name}</span>
-                                  <span className="text-xs text-white/40">{player.nationality}</span>
-                                </div>
-                              ))}
+                              {grouped[pos].map(player => {
+                                const s =
+                                  scorerMap.get(player.name.toLowerCase()) ??
+                                  scorerMap.get(player.name.split(' ').pop()!.toLowerCase())
+                                return (
+                                  <div
+                                    key={player.name}
+                                    className="flex items-center gap-2 bg-pitch rounded-lg px-3 py-2"
+                                  >
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-white truncate">{player.name}</p>
+                                      <p className="text-[10px] text-white/30">{player.nationality}</p>
+                                    </div>
+                                    {s ? (
+                                      <div className="flex items-center gap-2 flex-shrink-0">
+                                        {s.goals > 0 && (
+                                          <div className="text-center">
+                                            <p className="text-xs font-heading text-gold">{s.goals}</p>
+                                            <p className="text-[9px] text-white/30">G</p>
+                                          </div>
+                                        )}
+                                        {(s.assists ?? 0) > 0 && (
+                                          <div className="text-center">
+                                            <p className="text-xs font-heading text-white">{s.assists}</p>
+                                            <p className="text-[9px] text-white/30">A</p>
+                                          </div>
+                                        )}
+                                        <div className="text-center">
+                                          <p className="text-xs font-heading text-white/60">{s.playedMatches}</p>
+                                          <p className="text-[9px] text-white/30">Apps</p>
+                                        </div>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                         ))}
