@@ -2,7 +2,7 @@ const functions = require('firebase-functions')
 const fetch = require('node-fetch')
 
 const API_BASE = 'https://api.football-data.org/v4'
-const API_KEY = process.env.FOOTBALL_API_KEY || functions.config().football?.api_key || ''
+const API_KEY = process.env.FOOTBALL_API_KEY || ''
 
 exports.footballProxy = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*')

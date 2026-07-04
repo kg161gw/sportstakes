@@ -27,11 +27,11 @@ jobs:
       - name: Deploy staging
         if: github.ref == 'refs/heads/develop'
         run: |
-          npx firebase-tools functions:config:set football.api_key="${{ secrets.VITE_API_KEY_STAGING }}" --project sportstakes-staging --token ${{ secrets.FIREBASE_TOKEN }}
+          echo "FOOTBALL_API_KEY=${{ secrets.VITE_API_KEY_STAGING }}" > functions/.env
           npx firebase-tools deploy --only hosting,functions --project sportstakes-staging --token ${{ secrets.FIREBASE_TOKEN }}
 
       - name: Deploy production
         if: github.ref == 'refs/heads/main'
         run: |
-          npx firebase-tools functions:config:set football.api_key="${{ secrets.VITE_API_KEY_PROD }}" --project sportstakes-prod --token ${{ secrets.FIREBASE_TOKEN }}
+          echo "FOOTBALL_API_KEY=${{ secrets.VITE_API_KEY_PROD }}" > functions/.env
           npx firebase-tools deploy --only hosting,functions --project sportstakes-prod --token ${{ secrets.FIREBASE_TOKEN }}
