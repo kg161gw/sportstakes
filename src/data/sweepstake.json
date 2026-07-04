@@ -1,15 +1,23 @@
 {
   "event": "FIFA World Cup 2026",
   "participants": [
-    { "name": "Alice", "teams": ["Brazil", "France"] },
-    { "name": "Bob", "teams": ["England", "Argentina"] },
-    { "name": "Charlie", "teams": ["Spain"] },
-    { "name": "Diana", "teams": ["Germany", "Netherlands"] },
-    { "name": "Ed", "teams": ["Portugal"] },
-    { "name": "Fiona", "teams": ["USA", "Mexico"] },
-    { "name": "George", "teams": ["Colombia"] },
-    { "name": "Hannah", "teams": ["Morocco", "Japan"] },
-    { "name": "Ivan", "teams": ["Uruguay"] },
-    { "name": "Jane", "teams": ["Belgium", "Croatia"] }
+    { "name": "Rae", "teams": ["Germany", "Belgium"] },
+    { "name": "John", "teams": ["Spain", "DR Congo"] },
+    { "name": "Shane", "teams": ["Bosnia Herzegovina", "Senegal"] },
+    { "name": "Ellie", "teams": ["Australia", "Sweden"] },
+    { "name": "Brodie", "teams": ["Algeria", "Mexico"] },
+    { "name": "Ashley", "teams": ["Ecuador", "Croatia"] },
+    { "name": "Kieran", "teams": ["Netherlands", "Colombia"] },
+    { "name": "Nathan", "teams": ["USA", "Canada"] },
+    { "name": "Tiree", "teams": ["Cape Verde", "Argentina"] },
+    { "name": "Holly", "teams": ["Switzerland", "Paraguay"] },
+    { "name": "Mathew", "teams": ["Ghana", "England"] },
+    { "name": "Alba", "teams": ["Portugal"] },
+    { "name": "Aspen", "teams": ["Brazil"] },
+    { "name": "Abbie", "teams": ["Egypt", "Japan"] },
+    { "name": "Evan", "teams": ["Ivory Coast", "Norway"] },
+    { "name": "Jack", "teams": ["South Africa"] },
+    { "name": "Kiano", "teams": ["Morocco"] },
+    { "name": "Caleb", "teams": ["Austria", "France"] }
   ]
 }
