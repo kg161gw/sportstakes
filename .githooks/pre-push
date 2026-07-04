@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Pre-push hook — runs the same checks as CI before any push.
+# Installed automatically via `npm install` (see prepare script in package.json).
+
+set -e
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo ""
+echo "▶ pre-push: lint"
+npm run lint
+
+echo ""
+echo "▶ pre-push: type-check"
+npm run type-check
+
+echo ""
+echo "▶ pre-push: build"
+npm run build
+
+echo ""
+echo "✓ All checks passed — pushing."
+echo ""

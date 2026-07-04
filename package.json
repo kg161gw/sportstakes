@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings 0",
     "type-check": "tsc --noEmit",
-    "preview": "vite preview"
+    "test": "vitest run",
+    "preview": "vite preview",
+    "prepare": "git config core.hooksPath .githooks && chmod +x .githooks/pre-push"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.101.2",
