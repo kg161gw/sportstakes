@@ -4,7 +4,16 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  define: {
-    'import.meta.env.VITE_API_KEY': JSON.stringify(process.env.VITE_API_KEY ?? ''),
+  server: {
+    proxy: {
+      '/api/football': {
+        target: 'https://api.football-data.org/v4',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/api\/football/, ''),
+        headers: {
+          'X-Auth-Token': process.env.VITE_API_KEY ?? '',
+        },
+      },
+    },
   },
 })

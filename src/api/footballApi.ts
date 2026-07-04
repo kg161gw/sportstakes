@@ -1,10 +1,8 @@
-const BASE = 'https://api.football-data.org/v4'
-const API_KEY = import.meta.env.VITE_API_KEY as string
+// All requests go through /api/football proxy (Vite in dev, Cloud Function in prod)
+const BASE = '/api/football'
 
 async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'X-Auth-Token': API_KEY },
-  })
+  const res = await fetch(`${BASE}${path}`)
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`)
   return res.json() as Promise<T>
 }
