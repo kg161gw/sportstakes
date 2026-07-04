@@ -9,11 +9,20 @@ function norm(s: string): string {
 
 const ALIASES: Record<string, string> = {
   unitedstates: 'usa',
+  unitedstatesofamerica: 'usa',
   southkorea: 'korearepublic',
+  korea: 'korearepublic',
   ivorycoast: 'cotedivoire',
   drcongo: 'congodr',
   democraticrepublicofcongo: 'congodr',
   bosniaandherzegovina: 'bosniaaherzegovina',
+  czechrepublic: 'czechia',
+  northmacedonia: 'macedonia',
+  trinidadandtobago: 'trinidadtobago',
+  antiguaandbarbuda: 'antiguabarbuda',
+  stvincentandthegrenadines: 'stvincentgrenadines',
+  saintvincentandthegrenadines: 'stvincentgrenadines',
+  uae: 'unitedarabemirates',
 }
 
 function resolve(n: string): string { return ALIASES[norm(n)] ?? norm(n) }
@@ -58,22 +67,27 @@ export function useFixtureId(homeTeamName: string, awayTeamName: string, utcDate
   )
 }
 
-export function useFixtureStats(fixtureId: number | null) {
+// Fixture data for a finished match never changes — cache it for 24h
+const FINISHED_STALE = 24 * 60 * 60_000
+// Live/recent match data — refresh every 5 minutes
+const LIVE_STALE = 5 * 60_000
+
+export function useFixtureStats(fixtureId: number | null, isLive = false) {
   return useQuery({
     queryKey: ['apf', 'stats', fixtureId],
     queryFn: () => apiFootballApi.fixtureStats(fixtureId!),
     enabled: afAvailable && fixtureId !== null,
-    staleTime: 5 * 60_000,
+    staleTime: isLive ? LIVE_STALE : FINISHED_STALE,
     retry: 1,
   })
 }
 
-export function useFixtureEvents(fixtureId: number | null) {
+export function useFixtureEvents(fixtureId: number | null, isLive = false) {
   return useQuery({
     queryKey: ['apf', 'events', fixtureId],
     queryFn: () => apiFootballApi.fixtureEvents(fixtureId!),
     enabled: afAvailable && fixtureId !== null,
-    staleTime: 5 * 60_000,
+    staleTime: isLive ? LIVE_STALE : FINISHED_STALE,
     retry: 1,
   })
 }
@@ -83,7 +97,7 @@ export function useFixtureLineups(fixtureId: number | null) {
     queryKey: ['apf', 'lineups', fixtureId],
     queryFn: () => apiFootballApi.fixtureLineups(fixtureId!),
     enabled: afAvailable && fixtureId !== null,
-    staleTime: 60 * 60_000,
+    staleTime: FINISHED_STALE, // lineups never change after kickoff
     retry: 1,
   })
 }
@@ -93,7 +107,7 @@ export function useFixturePlayers(fixtureId: number | null) {
     queryKey: ['apf', 'fixture-players', fixtureId],
     queryFn: () => apiFootballApi.fixturePlayers(fixtureId!),
     enabled: afAvailable && fixtureId !== null,
-    staleTime: 60 * 60_000,
+    staleTime: FINISHED_STALE,
     retry: 1,
   })
 }
@@ -126,7 +140,7 @@ export function useTeamSeasonStats(afTeamId: number | null) {
     queryKey: ['apf', 'team-season-stats', afTeamId],
     queryFn: () => apiFootballApi.teamSeasonStats(afTeamId!),
     enabled: afAvailable && afTeamId !== null,
-    staleTime: 60 * 60_000,
+    staleTime: 4 * 60 * 60_000, // 4h — updates after each match day
     retry: 1,
   })
 }
@@ -136,7 +150,7 @@ export function useTeamInjuries(afTeamId: number | null) {
     queryKey: ['apf', 'team-injuries', afTeamId],
     queryFn: () => apiFootballApi.teamInjuries(afTeamId!),
     enabled: afAvailable && afTeamId !== null,
-    staleTime: 30 * 60_000,
+    staleTime: 6 * 60 * 60_000, // 6h
     retry: 1,
   })
 }
@@ -146,7 +160,7 @@ export function useTopScorers() {
     queryKey: ['apf', 'top-scorers'],
     queryFn: () => apiFootballApi.topScorers(),
     enabled: afAvailable,
-    staleTime: 30 * 60_000,
+    staleTime: 2 * 60 * 60_000, // 2h
     retry: 1,
   })
 }
@@ -156,7 +170,7 @@ export function useTopAssists() {
     queryKey: ['apf', 'top-assists'],
     queryFn: () => apiFootballApi.topAssists(),
     enabled: afAvailable,
-    staleTime: 30 * 60_000,
+    staleTime: 2 * 60 * 60_000, // 2h
     retry: 1,
   })
 }

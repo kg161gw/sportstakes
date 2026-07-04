@@ -166,43 +166,51 @@ function PlayerPanel({
           </div>
         )}
 
-        {/* API-Football season stats */}
-        {afAvailable && stat && (
+        {/* WC 2026 stats from API-Football */}
+        {afAvailable && (
           <div className="px-5 mt-3">
-            <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">Season Stats</p>
-            <div className="grid grid-cols-3 gap-2">
-              {(() => {
-                const ratingRaw = stat.games.rating ? parseFloat(stat.games.rating) : null
-                const ratingColor = ratingRaw !== null
-                  ? ratingRaw >= 7.5 ? 'text-gold' : ratingRaw >= 6.5 ? 'text-white' : 'text-white/40'
-                  : 'text-white'
+            <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">WC 2026 Stats</p>
+            {statsLoading ? (
+              <div className="flex justify-center py-3"><Spinner /></div>
+            ) : stat ? (
+              <div className="grid grid-cols-3 gap-2">
+                {(() => {
+                  const ratingRaw = stat.games.rating ? parseFloat(stat.games.rating) : null
+                  const ratingColor = ratingRaw !== null
+                    ? ratingRaw >= 7.5 ? 'text-gold' : ratingRaw >= 6.5 ? 'text-white' : 'text-white/40'
+                    : 'text-white'
 
-                const items: Array<{ value: string | number | null; label: string; color?: string }> = [
-                  { value: ratingRaw !== null ? ratingRaw.toFixed(1) : null, label: 'Rating', color: ratingColor },
-                  { value: stat.games.minutes, label: 'Mins' },
-                  { value: stat.goals.total, label: 'Goals' },
-                  { value: stat.goals.assists, label: 'Assists' },
-                  { value: stat.shots.on, label: 'On Target' },
-                  { value: stat.passes.accuracy, label: 'Pass Acc' },
-                  { value: stat.tackles.total, label: 'Tackles' },
-                  { value: stat.cards.yellow > 0 ? stat.cards.yellow : null, label: 'Yellows' },
-                ]
+                  const items: Array<{ value: string | number | null; label: string; color?: string }> = [
+                    { value: ratingRaw !== null ? ratingRaw.toFixed(1) : null, label: 'Rating', color: ratingColor },
+                    { value: stat.games.minutes, label: 'Mins' },
+                    { value: stat.goals.total, label: 'Goals' },
+                    { value: stat.goals.assists, label: 'Assists' },
+                    { value: stat.shots.on, label: 'On Target' },
+                    { value: stat.passes.accuracy, label: 'Pass Acc' },
+                    { value: stat.tackles.total, label: 'Tackles' },
+                    { value: stat.cards.yellow > 0 ? stat.cards.yellow : null, label: 'Yellows' },
+                  ]
 
-                return items
-                  .filter(item => item.value !== null && item.value !== 0 && item.value !== '')
-                  .map(item => (
-                    <div key={item.label} className="bg-pitch-light rounded-lg p-2 text-center">
-                      <p className={`font-heading text-base ${item.color ?? 'text-white'}`}>{item.value}</p>
-                      <p className="text-white/40 text-[10px]">{item.label}</p>
-                    </div>
-                  ))
-              })()}
-            </div>
+                  return items
+                    .filter(item => item.value !== null && item.value !== 0 && item.value !== '')
+                    .map(item => (
+                      <div key={item.label} className="bg-pitch-light rounded-lg p-2 text-center">
+                        <p className={`font-heading text-base ${item.color ?? 'text-white'}`}>{item.value}</p>
+                        <p className="text-white/40 text-[10px]">{item.label}</p>
+                      </div>
+                    ))
+                })()}
+              </div>
+            ) : (
+              <p className="text-white/25 text-xs text-center py-2">
+                No WC 2026 stats recorded yet
+              </p>
+            )}
           </div>
         )}
 
         {/* Per-90 stats */}
-        {afAvailable && derived && stat?.games.minutes && stat.games.minutes >= 45 && (
+        {afAvailable && derived && (stat?.games.minutes ?? 0) >= 45 && (
           <div className="px-5 mt-3">
             <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">Per 90 Minutes</p>
             <div className="grid grid-cols-3 gap-2">
@@ -445,9 +453,9 @@ export default function TeamDetailPage() {
           )}
 
           {/* Season stats summary */}
-          {matchStats.played > 0 && (
+          {matchStats.played > 0 ? (
             <div className="bg-pitch-mid rounded-xl p-4">
-              <p className="text-white/40 text-xs uppercase tracking-wider mb-3">Season Stats</p>
+              <p className="text-white/40 text-xs uppercase tracking-wider mb-3">WC 2026 Record</p>
               <div className="grid grid-cols-4 gap-2 text-center mb-4">
                 <div>
                   <p className="font-heading text-xl text-white">{matchStats.played}</p>
@@ -499,6 +507,18 @@ export default function TeamDetailPage() {
                 )}
               </div>
             </div>
+          ) : (
+            /* No results yet — show upcoming schedule */
+            upcomingMatches.length > 0 && (
+              <div className="bg-pitch-mid rounded-xl p-4">
+                <p className="text-white/40 text-xs uppercase tracking-wider mb-3">WC 2026 Fixtures</p>
+                <div className="space-y-2">
+                  {upcomingMatches.slice(0, 3).map((m: Match, i: number) => (
+                    <ExpandableMatchCard key={m.id} match={m} index={i} />
+                  ))}
+                </div>
+              </div>
+            )
           )}
 
           {/* Ratings bars */}

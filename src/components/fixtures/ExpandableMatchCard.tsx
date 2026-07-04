@@ -104,9 +104,10 @@ function LineupsPanel({ lineups, homeTeamName }: { lineups: AfLineup[]; homeTeam
 // ── Match Detail Panel ────────────────────────────────────────────────
 
 function MatchDetailPanel({ match }: { match: Match }) {
+  const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED'
   const fixtureId = useFixtureId(match.homeTeam.name, match.awayTeam.name, match.utcDate)
-  const { data: statsData = [], isLoading: statsLoading } = useFixtureStats(fixtureId)
-  const { data: events = [], isLoading: eventsLoading } = useFixtureEvents(fixtureId)
+  const { data: statsData = [], isLoading: statsLoading } = useFixtureStats(fixtureId, isLive)
+  const { data: events = [], isLoading: eventsLoading } = useFixtureEvents(fixtureId, isLive)
   const { data: lineups = [], isLoading: lineupsLoading } = useFixtureLineups(fixtureId)
   const { data: fdDetail } = useMatchDetail(match.id)
 
