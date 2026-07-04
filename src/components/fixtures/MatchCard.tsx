@@ -33,7 +33,16 @@ function TeamDisplay({ team, align }: { team: Match['homeTeam']; align: 'left' |
   )
 }
 
-export default function MatchCard({ match, index = 0 }: { match: Match; index?: number }) {
+export default function MatchCard({
+  match,
+  index = 0,
+  embedded = false,
+}: {
+  match: Match
+  index?: number
+  /** When true, skip the outer card background/border (used inside ExpandableMatchCard) */
+  embedded?: boolean
+}) {
   const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED'
   const isScheduled = match.status === 'SCHEDULED' || match.status === 'TIMED'
   const matchTime = new Date(match.utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -44,7 +53,7 @@ export default function MatchCard({ match, index = 0 }: { match: Match; index?: 
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04, duration: 0.25 }}
-      className={`rounded-xl p-3 border transition-all ${
+      className={embedded ? 'p-3' : `rounded-xl p-3 border transition-all ${
         isLive
           ? 'bg-pitch-mid border-live/40 shadow-[0_0_20px_rgba(239,68,68,0.15)]'
           : 'bg-pitch-mid border-white/5 hover:border-white/20'

@@ -85,6 +85,34 @@ export interface Scorer {
   penalties: number | null
 }
 
+export interface GoalEvent {
+  minute: number
+  type: 'NORMAL' | 'OWN' | 'PENALTY'
+  team: { id: number; name: string }
+  scorer: { id: number; name: string }
+  assist: { id: number; name: string } | null
+}
+
+export interface BookingEvent {
+  minute: number
+  team: { id: number; name: string }
+  player: { id: number; name: string }
+  card: 'YELLOW' | 'RED' | 'YELLOW_RED'
+}
+
+export interface SubstitutionEvent {
+  minute: number
+  team: { id: number; name: string }
+  playerOut: { id: number; name: string }
+  playerIn: { id: number; name: string }
+}
+
+export interface MatchDetail extends Match {
+  goals: GoalEvent[]
+  bookings: BookingEvent[]
+  substitutions: SubstitutionEvent[]
+}
+
 export const footballApi = {
   matches: () => apiFetch<{ matches: Match[] }>('/competitions/WC/matches'),
   standings: () => apiFetch<{ standings: StandingGroup[] }>('/competitions/WC/standings'),
@@ -92,4 +120,5 @@ export const footballApi = {
   team: (id: number) => apiFetch<Team>(`/teams/${id}`),
   teamMatches: (id: number) => apiFetch<{ matches: Match[] }>(`/teams/${id}/matches?competitions=WC`),
   scorers: () => apiFetch<{ scorers: Scorer[] }>('/competitions/WC/scorers?limit=100'),
+  matchDetail: (id: number) => apiFetch<MatchDetail>(`/matches/${id}`),
 }

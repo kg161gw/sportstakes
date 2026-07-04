@@ -3,6 +3,17 @@ import { footballApi } from '../api/footballApi'
 import type { Match } from '../api/footballApi'
 import { qk } from '../api/queryKeys'
 
+export function useMatchDetail(id: number | null) {
+  return useQuery({
+    queryKey: qk.matchDetail(id!),
+    queryFn: () => footballApi.matchDetail(id!),
+    enabled: id !== null,
+    staleTime: 5 * 60_000,
+    retry: 2,
+    retryDelay: attempt => Math.min(1000 * 2 ** attempt, 10_000),
+  })
+}
+
 function getRefetchInterval(matches: Match[]): number {
   const hasLive = matches.some(m => m.status === 'IN_PLAY' || m.status === 'PAUSED')
   if (hasLive) return 30_000

@@ -6,6 +6,7 @@ import SlidingTabs from '../components/shared/SlidingTabs'
 import { useTeamDetail, useTeamMatches, useScorers } from '../hooks/useTeams'
 import { useSquadEnrichment, usePlayerEnrichment } from '../hooks/usePlayerEnrichment'
 import MatchCard from '../components/fixtures/MatchCard'
+import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import { SkeletonCard, SkeletonText } from '../components/shared/LoadingSkeleton'
 import type { Match, Player } from '../api/footballApi'
 import type { TsdbPlayer } from '../api/theSportsDbApi'
@@ -187,6 +188,11 @@ export default function TeamDetailPage() {
   const teamId = id ? parseInt(id) : null
   const [tab, setTab] = useState('overview')
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  const [expandedMatchId, setExpandedMatchId] = useState<number | null>(null)
+
+  function toggleMatch(id: number) {
+    setExpandedMatchId(prev => (prev === id ? null : id))
+  }
 
   const { data: team, isLoading: teamLoading } = useTeamDetail(teamId)
   const { data: matches = [], isLoading: matchesLoading } = useTeamMatches(teamId)
@@ -500,7 +506,15 @@ export default function TeamDetailPage() {
                 <div>
                   <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Results</p>
                   <div className="space-y-2">
-                    {finishedMatches.map((m: Match, i: number) => <MatchCard key={m.id} match={m} index={i} />)}
+                    {finishedMatches.map((m: Match, i: number) => (
+                      <ExpandableMatchCard
+                        key={m.id}
+                        match={m}
+                        index={i}
+                        expandedId={expandedMatchId}
+                        onToggle={toggleMatch}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
@@ -508,7 +522,15 @@ export default function TeamDetailPage() {
                 <div>
                   <p className="text-white/40 text-xs uppercase tracking-wider mb-2">Upcoming</p>
                   <div className="space-y-2">
-                    {upcomingMatches.map((m: Match, i: number) => <MatchCard key={m.id} match={m} index={i} />)}
+                    {upcomingMatches.map((m: Match, i: number) => (
+                      <ExpandableMatchCard
+                        key={m.id}
+                        match={m}
+                        index={i}
+                        expandedId={expandedMatchId}
+                        onToggle={toggleMatch}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
