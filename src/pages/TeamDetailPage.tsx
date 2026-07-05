@@ -8,7 +8,7 @@ import { useSquadEnrichment, usePlayerEnrichment } from '../hooks/usePlayerEnric
 import { useTeamSdbData } from '../hooks/useTeamEnrichment'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
 import { SkeletonCard, SkeletonText } from '../components/shared/LoadingSkeleton'
-import Spinner from '../components/shared/Spinner'
+
 import { useAfTeamId, useTeamSeasonStats, useTeamInjuries } from '../hooks/useApiFootball'
 import { calcTeamStatsFromMatches, calcTeamSeasonRatings } from '../utils/calcStats'
 import type { Match, Player, Scorer } from '../api/footballApi'
@@ -73,22 +73,28 @@ function PlayerPanel({
   const { data: enriched, isLoading } = usePlayerEnrichment(player.name)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 16 }}
-      className="fixed inset-0 z-50 flex items-end justify-center"
-      onClick={onClose}
-    >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+    <>
+      {/* Backdrop — fades only */}
       <motion.div
-        className="relative w-full max-w-md bg-pitch-mid rounded-t-2xl pb-8 overflow-hidden max-h-[85vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-        initial={{ y: '100%' }}
-        animate={{ y: 0 }}
-        exit={{ y: '100%' }}
-        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Sheet — slides up */}
+      <motion.div
+        className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
       >
+        <motion.div
+          className="relative w-full max-w-md bg-pitch-mid rounded-t-2xl pb-8 max-h-[85vh] overflow-y-auto pointer-events-auto"
+          onClick={e => e.stopPropagation()}
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+        >
         {/* drag handle */}
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-10 h-1 rounded-full bg-white/20" />
@@ -98,10 +104,6 @@ function PlayerPanel({
         <div className="flex items-start gap-4 px-5 py-3">
           <div className="w-24 h-28 rounded-xl overflow-hidden bg-pitch-light flex-shrink-0">
             {isLoading ? (
-              <div className="w-full h-full flex items-center justify-center">
-                <Spinner />
-              </div>
-            ) : isLoading ? (
               <div className="w-full h-full animate-pulse bg-white/10" />
             ) : enriched?.strThumb ? (
               <img
@@ -194,8 +196,9 @@ function PlayerPanel({
         >
           ×
         </button>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   )
 }
 
