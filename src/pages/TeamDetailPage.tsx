@@ -79,13 +79,13 @@ function PlayerPanel({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
       {/* Sheet — slides up */}
       <motion.div
-        className="fixed bottom-0 left-0 right-0 z-50 flex justify-center pointer-events-none"
+        className="fixed bottom-0 left-0 right-0 z-[60] flex justify-center pointer-events-none"
       >
         <motion.div
           className="relative w-full max-w-md bg-pitch-mid rounded-t-2xl pb-8 max-h-[85vh] overflow-y-auto pointer-events-auto"
