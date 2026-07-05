@@ -4,6 +4,7 @@ import { useState } from 'react'
 import PageWrapper from '../components/shared/PageWrapper'
 import SlidingTabs from '../components/shared/SlidingTabs'
 import { useTeamDetail, useTeamMatches, useScorers } from '../hooks/useTeams'
+import { usePlayerGoalLog } from '../hooks/useMatches'
 import { useSquadEnrichment, usePlayerEnrichment } from '../hooks/usePlayerEnrichment'
 import { useTeamSdbData } from '../hooks/useTeamEnrichment'
 import ExpandableMatchCard from '../components/fixtures/ExpandableMatchCard'
@@ -64,13 +65,19 @@ function RatingBar({
 function PlayerPanel({
   player,
   scorer,
+  matches,
+  teamId,
   onClose,
 }: {
   player: Player
   scorer: Scorer | null
+  matches: Match[]
+  teamId: number
   onClose: () => void
 }) {
   const { data: enriched, isLoading } = usePlayerEnrichment(player.name)
+  const hasGoals = (scorer?.goals ?? 0) > 0
+  const { goals: goalLog, isLoading: goalLogLoading } = usePlayerGoalLog(hasGoals ? matches : [], player.name)
 
   return (
     <>
@@ -188,6 +195,53 @@ function PlayerPanel({
             </p>
           )}
         </div>
+
+        {/* Goal log — which matches & minutes */}
+        {hasGoals && (
+          <div className="px-5 mt-3">
+            <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">Goal Log</p>
+            {goalLogLoading ? (
+              <div className="space-y-1.5">
+                {[1, 2].map(i => <div key={i} className="h-11 rounded-lg bg-white/5 animate-pulse" />)}
+              </div>
+            ) : goalLog.length > 0 ? (
+              <div className="space-y-1.5">
+                {goalLog.map(({ match, goal }, i) => {
+                  const opponent = match.homeTeam.id === teamId ? match.awayTeam : match.homeTeam
+                  const dateLabel = new Date(match.utcDate).toLocaleDateString([], {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                  })
+                  const icon = goal.type === 'OWN' ? '⚽ OG' : goal.type === 'PENALTY' ? '⚽ P' : '⚽'
+                  const iconClass =
+                    goal.type === 'OWN' ? 'text-red-400' : goal.type === 'PENALTY' ? 'text-gold' : 'text-white/70'
+                  return (
+                    <div
+                      key={i}
+                      className="bg-pitch-light rounded-lg px-3 py-2 flex items-center justify-between gap-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-white text-xs font-medium truncate">
+                          vs {opponent.shortName || opponent.tla}
+                        </p>
+                        <p className="text-white/40 text-[10px]">{dateLabel}</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <span className={`text-xs ${iconClass}`}>{icon}</span>
+                        <span className="text-white/50 text-xs ml-1">{goal.minute}'</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-white/25 text-xs text-center py-2">
+                Goal-by-goal detail not yet available
+              </p>
+            )}
+          </div>
+        )}
 
         {/* close */}
         <button
@@ -729,6 +783,8 @@ export default function TeamDetailPage() {
               s.player.name.toLowerCase() === selectedPlayer.name.toLowerCase() ||
               s.player.lastName?.toLowerCase() === selectedPlayer.name.split(' ').pop()?.toLowerCase()
             ) ?? null}
+            matches={matches}
+            teamId={teamId ?? 0}
             onClose={() => setSelectedPlayer(null)}
           />
         )}

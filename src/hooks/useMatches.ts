@@ -1,7 +1,11 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { footballApi } from '../api/footballApi'
-import type { Match } from '../api/footballApi'
+import type { GoalEvent, Match } from '../api/footballApi'
 import { qk } from '../api/queryKeys'
+
+function lastNameOf(full: string): string {
+  return full.split(' ').pop() ?? full
+}
 
 export function useMatchDetail(id: number | null) {
   return useQuery({
@@ -49,4 +53,39 @@ export function useTodayMatches() {
   const { data: matches = [] } = useMatches()
   const today = new Date().toDateString()
   return matches.filter(m => new Date(m.utcDate).toDateString() === today)
+}
+
+export interface PlayerGoal {
+  match: Match
+  goal: GoalEvent
+}
+
+// Fetches match detail (goal events) for each finished match and returns the
+// subset scored by the given player, newest first. Pass an empty array when
+// the player has no recorded goals to avoid needless match-detail fetches.
+export function usePlayerGoalLog(matches: Match[], playerName: string) {
+  const finished = matches.filter(m => m.status === 'FINISHED')
+  const results = useQueries({
+    queries: finished.map(m => ({
+      queryKey: qk.matchDetail(m.id),
+      queryFn: () => footballApi.matchDetail(m.id),
+      staleTime: 5 * 60_000,
+    })),
+  })
+
+  const isLoading = results.length > 0 && results.some(r => r.isLoading)
+  const target = playerName.toLowerCase()
+  const targetLastName = lastNameOf(playerName).toLowerCase()
+
+  const goals: PlayerGoal[] = finished
+    .flatMap((match, i) => {
+      const detail = results[i].data
+      if (!detail) return []
+      return detail.goals
+        .filter(g => g.scorer.name.toLowerCase() === target || lastNameOf(g.scorer.name).toLowerCase() === targetLastName)
+        .map(goal => ({ match, goal }))
+    })
+    .sort((a, b) => new Date(b.match.utcDate).getTime() - new Date(a.match.utcDate).getTime())
+
+  return { goals, isLoading }
 }
