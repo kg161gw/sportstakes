@@ -61,6 +61,69 @@ function RatingBar({
   )
 }
 
+// ── Goal log — which matches & minutes a player scored in ─────────────
+function GoalLogList({
+  playerName,
+  hasGoals,
+  matches,
+  teamId,
+}: {
+  playerName: string
+  hasGoals: boolean
+  matches: Match[]
+  teamId: number
+}) {
+  const { goals: goalLog, isLoading } = usePlayerGoalLog(hasGoals ? matches : [], playerName)
+
+  if (!hasGoals) return null
+
+  if (isLoading) {
+    return (
+      <div className="space-y-1.5">
+        {[1, 2].map(i => <div key={i} className="h-11 rounded-lg bg-white/5 animate-pulse" />)}
+      </div>
+    )
+  }
+
+  if (goalLog.length === 0) {
+    return (
+      <p className="text-white/25 text-xs text-center py-2">
+        Goal-by-goal detail not yet available
+      </p>
+    )
+  }
+
+  return (
+    <div className="space-y-1.5">
+      {goalLog.map(({ match, goal }, i) => {
+        const opponent = match.homeTeam.id === teamId ? match.awayTeam : match.homeTeam
+        const dateLabel = new Date(match.utcDate).toLocaleDateString([], {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        })
+        const icon = goal.type === 'OWN' ? '⚽ OG' : goal.type === 'PENALTY' ? '⚽ P' : '⚽'
+        const iconClass =
+          goal.type === 'OWN' ? 'text-red-400' : goal.type === 'PENALTY' ? 'text-gold' : 'text-white/70'
+        return (
+          <div key={i} className="bg-pitch-light rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-white text-xs font-medium truncate">
+                vs {opponent.shortName || opponent.tla}
+              </p>
+              <p className="text-white/40 text-[10px]">{dateLabel}</p>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <span className={`text-xs ${iconClass}`}>{icon}</span>
+              <span className="text-white/50 text-xs ml-1">{goal.minute}'</span>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Player Detail Panel ────────────────────────────────────────────────
 function PlayerPanel({
   player,
@@ -77,7 +140,6 @@ function PlayerPanel({
 }) {
   const { data: enriched, isLoading } = usePlayerEnrichment(player.name)
   const hasGoals = (scorer?.goals ?? 0) > 0
-  const { goals: goalLog, isLoading: goalLogLoading } = usePlayerGoalLog(hasGoals ? matches : [], player.name)
 
   return (
     <>
@@ -200,46 +262,7 @@ function PlayerPanel({
         {hasGoals && (
           <div className="px-5 mt-3">
             <p className="text-white/30 text-[10px] uppercase tracking-wider mb-2">Goal Log</p>
-            {goalLogLoading ? (
-              <div className="space-y-1.5">
-                {[1, 2].map(i => <div key={i} className="h-11 rounded-lg bg-white/5 animate-pulse" />)}
-              </div>
-            ) : goalLog.length > 0 ? (
-              <div className="space-y-1.5">
-                {goalLog.map(({ match, goal }, i) => {
-                  const opponent = match.homeTeam.id === teamId ? match.awayTeam : match.homeTeam
-                  const dateLabel = new Date(match.utcDate).toLocaleDateString([], {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })
-                  const icon = goal.type === 'OWN' ? '⚽ OG' : goal.type === 'PENALTY' ? '⚽ P' : '⚽'
-                  const iconClass =
-                    goal.type === 'OWN' ? 'text-red-400' : goal.type === 'PENALTY' ? 'text-gold' : 'text-white/70'
-                  return (
-                    <div
-                      key={i}
-                      className="bg-pitch-light rounded-lg px-3 py-2 flex items-center justify-between gap-2"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-white text-xs font-medium truncate">
-                          vs {opponent.shortName || opponent.tla}
-                        </p>
-                        <p className="text-white/40 text-[10px]">{dateLabel}</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <span className={`text-xs ${iconClass}`}>{icon}</span>
-                        <span className="text-white/50 text-xs ml-1">{goal.minute}'</span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="text-white/25 text-xs text-center py-2">
-                Goal-by-goal detail not yet available
-              </p>
-            )}
+            <GoalLogList playerName={player.name} hasGoals={hasGoals} matches={matches} teamId={teamId} />
           </div>
         )}
 
@@ -308,6 +331,7 @@ export default function TeamDetailPage() {
   const teamId = id ? parseInt(id) : null
   const [tab, setTab] = useState('overview')
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  const [expandedScorerId, setExpandedScorerId] = useState<number | null>(null)
 
   const { data: team, isLoading: teamLoading } = useTeamDetail(teamId)
   const { data: matches = [], isLoading: matchesLoading } = useTeamMatches(teamId)
@@ -676,33 +700,70 @@ export default function TeamDetailPage() {
               {teamScorers.map((s, i) => {
                 const enriched = enrichmentMap[s.player.name]
                 const photo = enriched?.strThumb ?? null
+                const hasGoals = s.goals > 0
+                const isExpanded = expandedScorerId === s.player.id
                 return (
                   <motion.div
                     key={s.player.id}
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.04 }}
-                    className="grid grid-cols-4 gap-2 px-4 py-3 border-b border-white/5 last:border-0 items-center"
+                    className="border-b border-white/5 last:border-0"
                   >
-                    <div className="col-span-2 flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full overflow-hidden bg-pitch-light flex-shrink-0 flex items-center justify-center">
-                        {photo ? (
-                          <img src={photo} alt={s.player.name} className="w-full h-full object-cover object-top" />
-                        ) : (
-                          <span className="text-white/30 text-xs font-heading">{s.player.name.charAt(0)}</span>
+                    <button
+                      onClick={() => hasGoals && setExpandedScorerId(isExpanded ? null : s.player.id)}
+                      className={`w-full grid grid-cols-4 gap-2 px-4 py-3 items-center text-left ${hasGoals ? 'cursor-pointer' : ''}`}
+                    >
+                      <div className="col-span-2 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full overflow-hidden bg-pitch-light flex-shrink-0 flex items-center justify-center">
+                          {photo ? (
+                            <img src={photo} alt={s.player.name} className="w-full h-full object-cover object-top" />
+                          ) : (
+                            <span className="text-white/30 text-xs font-heading">{s.player.name.charAt(0)}</span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white text-sm font-medium truncate">{s.player.name}</p>
+                          <p className="text-white/40 text-xs">{s.playedMatches} apps</p>
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <span className="font-heading text-gold text-lg">{s.goals}</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className="text-white/60 text-sm">{s.assists ?? '-'}</span>
+                        {hasGoals && (
+                          <motion.span
+                            animate={{ rotate: isExpanded ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                            className="text-white/20 text-xs leading-none select-none"
+                          >
+                            ▾
+                          </motion.span>
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-white text-sm font-medium truncate">{s.player.name}</p>
-                        <p className="text-white/40 text-xs">{s.playedMatches} apps</p>
-                      </div>
-                    </div>
-                    <div className="text-center">
-                      <span className="font-heading text-gold text-lg">{s.goals}</span>
-                    </div>
-                    <div className="text-center">
-                      <span className="text-white/60 text-sm">{s.assists ?? '-'}</span>
-                    </div>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <motion.div
+                          key="goal-log"
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25, ease: 'easeInOut' }}
+                          style={{ overflow: 'hidden' }}
+                        >
+                          <div className="px-4 pb-3">
+                            <GoalLogList
+                              playerName={s.player.name}
+                              hasGoals={hasGoals}
+                              matches={matches}
+                              teamId={teamId ?? 0}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.div>
                 )
               })}
